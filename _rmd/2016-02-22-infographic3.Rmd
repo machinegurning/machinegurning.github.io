@@ -6,7 +6,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "A year's data collected with a simple LDR based light sensor"
 published: yes
-status: processed
+status: process
 tags:
 - R
 - Raspberry Pi
