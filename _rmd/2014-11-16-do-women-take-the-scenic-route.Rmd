@@ -5,7 +5,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 excerpt: "Using the google routing API via ggmap"
 layout: post
 published: no
-status: draft
+status: processed
 comments: true
 tags: [Citibike, gender, dplyr, ggmap]
 categories: [Rstats]
