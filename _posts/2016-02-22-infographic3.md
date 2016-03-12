@@ -43,7 +43,7 @@ $$
 y=f \Big( \frac{1}{\ln{x}} \Big)
 $$
  
-Where \(f\) is the normalisation function:
+Where $$f$$ is the normalisation function:
  
 $$
 f(x)=\frac{x - \max x}{\max x - \min x}
