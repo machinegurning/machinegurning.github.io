@@ -5,8 +5,8 @@ date: '2016-03-01'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Predicting student performance using CART"
-published: no
-status: process
+published: yes
+status: processed
 tags:
 - R
 - machine learning
@@ -32,7 +32,7 @@ library(rpart.plot)
 
 #INPUT
 
-mydata <- "_data/2016-03-01_student_performance.csv" 
+mydata <- "data/2016-03-01_student_performance.csv" 
 
 mydata <- read.table(
   mydata, sep = ";",

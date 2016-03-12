@@ -1,9 +1,8 @@
 ---
-title: "Student Performance in Portugal"
-author: matthew_gregory
+title: "Student Performance"
 comments: yes
 date: '2016-03-01'
-modified: 2016-03-10
+modified: 2016-03-12
 layout: post
 excerpt: "Predicting student performance using CART"
 published: true
@@ -14,6 +13,8 @@ tags:
 - education
 categories: Rstats
 ---
+ 
+# Student performance in Portugal  
  
 Education is a key factor affecting long term economic progress. Success in the core languages provide a linguistic and numeric scaffold for other subjects later in students' academic careers.The growth in school educational databases facilitates the use of Data Mining and Machine Learning practises to improve outcomes in these subjects by identifying factors that are indicative of failure. Predicting outcomes allows educators to take corrective measures for weak students mitigating the risk of failure. 
  
@@ -31,7 +32,7 @@ library(rpart.plot)
  
 #INPUT
  
-mydata <- "_data/2016-03-01_student_performance.csv" 
+mydata <- "data/2016-03-01_student_performance.csv" 
  
 mydata <- read.table(
   mydata, sep = ";",
