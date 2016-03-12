@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/machinegurning/machinegurning.github.io.png?label=ready&title=Ready)](https://waffle.io/machinegurning/machinegurning.github.io)
 # Minimal Mistakes
 
 **[Minimal Mistakes](http://mmistakes.github.io/minimal-mistakes)** is a two column responsive Jekyll theme perfect for powering your GitHub hosted blog built. Compatible with Jekyll 3.0 and up.
