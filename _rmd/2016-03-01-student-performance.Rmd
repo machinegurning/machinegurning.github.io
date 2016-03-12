@@ -6,13 +6,15 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Predicting student performance using CART"
 published: yes
-status: process
+status: processed
 tags:
 - R
 - machine learning
 - education
 categories: Rstats
 ---
+
+{% include _toc.html %}
 
 Education is a key factor affecting long term economic progress. Success in the core languages provide a linguistic and numeric scaffold for other subjects later in students' academic careers.The growth in school educational databases facilitates the use of Data Mining and Machine Learning practises to improve outcomes in these subjects by identifying factors that are indicative of failure. Predicting outcomes allows educators to take corrective measures for weak students mitigating the risk of failure. 
 
