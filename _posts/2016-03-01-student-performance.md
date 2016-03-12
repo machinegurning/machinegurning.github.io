@@ -24,6 +24,12 @@ The [data](https://archive.ics.uci.edu/ml/datasets/Student+Performance) was down
  
 
 {% highlight r %}
+knitr::opts_chunk$set(
+  fig.width = 5,
+  fig.height = 5,
+  dev = "svg"
+  )
+ 
 library(dplyr)
 library(C50)
 library(gmodels)
@@ -94,7 +100,7 @@ From the [codebook](https://archive.ics.uci.edu/ml/datasets/Student+Performance#
 hist(mydata$G3)
 {% endhighlight %}
 
-![plot of chunk 2016-03-01_histogram](/figures/2016-03-01_histogram-1.png)
+![plot of chunk 2016-03-01_histogram](/figures/2016-03-01_histogram-1.svg)
  
 ## Make the final grade binary (pass and fail)
  
@@ -164,7 +170,7 @@ summary(m)
 ## C5.0.default(x = data_train[-13], y = data_train$final)
 ## 
 ## 
-## C5.0 [Release 2.07 GPL Edition]  	Sat Mar 12 23:23:01 2016
+## C5.0 [Release 2.07 GPL Edition]  	Sat Mar 12 23:34:59 2016
 ## -------------------------------
 ## 
 ## Class specified by attribute `outcome'
@@ -272,7 +278,7 @@ plot(m2)
 text(m2, pretty = 0, cex = 0.65)
 {% endhighlight %}
 
-![plot of chunk 2016-03-01_plot_m2](/figures/2016-03-01_plot_m2-1.png)
+![plot of chunk 2016-03-01_plot_m2](/figures/2016-03-01_plot_m2-1.svg)
  
 OK, but not great, we need a pretty interfce if people are expected to use this tool. Let's use the `rpart.plot` package and the `prp()` function therein.
  
@@ -281,7 +287,7 @@ OK, but not great, we need a pretty interfce if people are expected to use this 
 prp(m2,varlen = 4, extra = 2)  # plot with shortened abrreviated variable names
 {% endhighlight %}
 
-![plot of chunk 2016-03-01_plot_prp](/figures/2016-03-01_plot_prp-1.png)
+![plot of chunk 2016-03-01_plot_prp](/figures/2016-03-01_plot_prp-1.svg)
  
 This function is much better for plotting trees with huge customisation options. Here we display the classification rate at the node, expressed as the number of correct classifications and the number of observations in the node.
  

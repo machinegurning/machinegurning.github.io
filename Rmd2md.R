@@ -144,10 +144,11 @@ rmd2md <- function(
   }
   invisible()
   
-  # Last thing = remove exif tags from jpgs in figures folder
-  # Requires linux too exiv2
+  # Last thing is to remove exif tags from jpgs in figures folder
+  # Requires linux tool exiv2
   
   system("exiv2 rm figures/*.jpg")
+
 }
 
 rmd2md()
