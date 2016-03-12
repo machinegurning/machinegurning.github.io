@@ -1,0 +1,167 @@
+---
+title: "Student Performance in Portugal"
+author: matthew_gregory
+comments: yes
+date: '2016-03-01'
+modified: 2016-03-10
+layout: post
+excerpt: "Predicting student performance using CART"
+published: true
+status: publish
+tags:
+- R
+- machine learning
+- education
+categories: Rstats
+---
+ 
+Education is a key factor affecting long term economic progress. Success in the core languages provide a linguistic and numeric scaffold for other subjects later in students' academic careers.The growth in school educational databases facilitates the use of Data Mining and Machine Learning practises to improve outcomes in these subjects by identifying factors that are indicative of failure. Predicting outcomes allows educators to take corrective measures for weak students mitigating the risk of failure. 
+ 
+## The Data  
+ 
+The [data](https://archive.ics.uci.edu/ml/datasets/Student+Performance) was downloaded from the UCI Machine Learning database and inspired by Cortez *et al*., 2008. We use maths results data only. We start off by clearing the workspace, then setting the working directory to match the location of the student maths data file. A caveat, note that the data is not comma-seperated but semi-colon seperated, ne sure to specify this in the `sep` argument in the `read.table()` function. Normally you should refer to the `sessionInfo()` output at the foot of this blog-post to determine which packages are installed and loaded for this, however as there are quite a few, this time we detail them here.
+ 
+
+{% highlight r %}
+library(dplyr)
+library(C50)
+library(gmodels)
+library(rpart)
+library(rpart.plot)
+ 
+#INPUT
+ 
+mydata <- "_data/2016-03-01_student_performance.csv" 
+ 
+mydata <- read.table(
+  mydata, sep = ";",
+  header = TRUE
+  )
+ 
+knitr::opts_chunk$set(eval=FALSE)
+{% endhighlight %}
+ 
+Let's have a look at our data using the convenient `glimpse` courtesy of the `dplyr` package. Notice how the range of the numeric variables is different.
+ 
+
+{% highlight r %}
+glimpse(mydata)
+{% endhighlight %}
+ 
+From the [codebook](https://archive.ics.uci.edu/ml/datasets/Student+Performance#) we know that G3 is the final grade of the students. We can inspect it's distribution using a historgram or the `hist()` function.
+ 
+
+{% highlight r %}
+hist(mydata$G3)
+{% endhighlight %}
+ 
+## Make the final grade binary (pass and fail)
+ 
+`G3` is pretty normally distributed, despite the dodgy tail. To simplify matters converted G3 marks below 10 as a fail, above or equal to 10 as a pass. Often a school is judged by whether students meet a critical boundary, in the UK it is a C grade at GCSE for example. Notice how we first set the `final` variable to the `NULL` object then use the logical `ifelse` to convert `G3` into the binary `final` (see [here](http://www.r-bloggers.com/r-na-vs-null)).
+ 
+
+{% highlight r %}
+mydata$final <- NULL
+ 
+mydata$final <- factor(
+  ifelse(mydata$G3 >= 10, 1, 0), 
+  labels = c("fail", "pass")
+  ) 
+{% endhighlight %}
+ 
+## Normalising the data
+ 
+The numeric variables cover different ranges. As we want all variables to be treated the same we should convert them so that they range between zero and one, thus operating on the same scale. We are interested in relative differences not absolute.  
+Our custom `normalise()` function takes a vector x of numeric values, and for each value in x subtracts the min value in x and divides by the range of values in x. A vector is returned.
+ 
+
+{% highlight r %}
+normalise <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+{% endhighlight %}
+ 
+## Objectives  
+ 
+- is it possible to predict student performance?    
+- can we identify the important variables in determining intervention?   
+ 
+## Decision tree advantages  
+ 
+- Appropriate as students and parent will want to know why a student has been selected for intervention. The outcome is essentially a flowchart.  
+- Widely used.  
+- Decent performance.  
+- There arn't too many variables in this problem.  
+ 
+
+ 
+## Training and test datasets.
+ 
+We need to split the data so we can build the model and then test it, to see if it generalises well. This gives us confidence in the external validity of the model. The data arrived in a random order thus we don't need to worry about sampling at random.
+ 
+
+{% highlight r %}
+data_train <- data_interest[1:350, ]
+data_test <- data_interest[351:395, ]
+{% endhighlight %}
+ 
+Now we need to train the model using the data.
+ 
+
+{% highlight r %}
+#Build the classifier
+m <- C5.0(x = data_train[-13], y = data_train$final) 
+#  final is the class variable so we need to exclude it from training
+summary(m)
+{% endhighlight %}
+ 
+Only 5% error rate, and the model has described an obvious relationship between most recent test score, `G2`, but has also identified the father's job, `Fedu`, as being a useful indicator which may not have been revealed in a human expert analysis.  
+Let's see how generalisable the model is by comparing it's predicted student math `G3` outcomes to real pass or fail status.
+ 
+
+{% highlight r %}
+#PREDICT
+p <- predict(m, data_test)
+CrossTable(data_test$final, p, prop.chisq = FALSE,
+           prop.c = FALSE, prop.r = FALSE, dnn = c("actual pass",
+                                                   "predicted pass"))
+{% endhighlight %}
+93.4% model accuracy, not bad, 3 students proved us wrong and passed anyway! Seems like a useful model for identifying students who need extra intervention and importantly it can be applied and interpreted by a human.
+ 
+## Seeing the trees for the...
+ 
+Let's finish by improving the way we visualise the tree diagram. We use this type of algorithm as it is very intuitive and easy to interpret, if we plot it appropriately! Here we use the `rpart` package to specify an identical model to pass to plot.
+ 
+
+{% highlight r %}
+#create tree using rpart, so we can plot it
+m2 <- rpart(final ~ . , data = data_train, method = 'class')
+#Plot it
+plot(m2)
+text(m2, pretty = 0, cex = 0.65)
+{% endhighlight %}
+ 
+OK, but not great, we need a pretty interfce if people are expected to use this tool. Let's use the `rpart.plot` package and the `prp()` function therein.
+ 
+
+{% highlight r %}
+prp(m2,varlen = 4, extra = 2)  # plot with shortened abrreviated variable names
+{% endhighlight %}
+ 
+This function is much better for plotting trees with huge customisation options. Here we display the classification rate at the node, expressed as the number of correct classifications and the number of observations in the node.
+ 
+## Conclusion
+ 
+This tool can now be implemented as policy at the school to determine where interventions should be targeted pending model validation.
+ 
+## References
+ 
+* Cortez and Silva (2008). Using data mining to predict secondary school performance.
+* Crawley (2004). Statistics an introduction using R.
+* James et al., (2014). An introduction to statistical learning with applications in R.
+* https://archive.ics.uci.edu/ml/datasets/Student+Performance
+ 
+
+{% highlight r %}
+sessionInfo()
+{% endhighlight %}
