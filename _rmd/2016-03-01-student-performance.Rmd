@@ -1,5 +1,5 @@
 ---
-title: "Student Performance"
+title: "Student performance in Portugal"
 comments: yes
 date: '2016-03-01'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
@@ -13,8 +13,6 @@ tags:
 - education
 categories: Rstats
 ---
-
-# Student performance in Portugal  
 
 Education is a key factor affecting long term economic progress. Success in the core languages provide a linguistic and numeric scaffold for other subjects later in students' academic careers.The growth in school educational databases facilitates the use of Data Mining and Machine Learning practises to improve outcomes in these subjects by identifying factors that are indicative of failure. Predicting outcomes allows educators to take corrective measures for weak students mitigating the risk of failure. 
 
