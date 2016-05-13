@@ -18,6 +18,12 @@ categories: Rstats
  
 {% include _toc.html %}
  
+ 
+* <https://github.com/hadley/purrr>  
+* <http://r4ds.had.co.nz/lists.html>  
+* <http://r4ds.had.co.nz/model-assessment.html>  
+* <https://cran.r-project.org/web/packages/broom/vignettes/kmeans.html>  
+* <https://cran.r-project.org/web/packages/broom/vignettes/broom.html>  
 
  
 I've been doing a lot of programming in Python recently, and have taken my eye off the #RStats ball of late.
