@@ -1,0 +1,330 @@
+---
+title: "Diagnosing bias and variance"
+author: matt_upson
+comments: yes
+date: '2016-05-28'
+#modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "A simple non-linear classifier using nearest-neighbour averaging"
+published: true
+status: draft
+tags:
+- statistics
+- data science
+- R
+- machine learning
+- nearest neighbours
+- starcraft
+categories: Rstats
+---
+
+{% include _toc.html %}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	error = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dev = "svg",
+	include = TRUE
+)
+
+```
+
+```{r}
+
+library(dplyr)
+library(readr)
+library(magrittr)
+library(purrr)
+library(class)
+library(ggplot2)
+
+# "data/2016-05-28-skillcraft.csv" %>% 
+#   read_csv(
+#     na = c("?","NA"),
+#     col_types = "iiiiidddiddddddididd"
+#     ) %>%
+#   saveRDS("data/2016-05-28-skillcraft.Rds")
+
+skillcraft <- readRDS("data/2016-05-28-skillcraft.Rds") %>%
+  na.omit
+
+```
+
+```{r}
+msd <- function(x, y) sqrt(mean((x - y) ^ 2))
+
+random_group <- function(n, probs) {
+  
+  probs <- probs / sum(probs)
+  
+  g <- findInterval(
+    seq(0, 1, length = n), 
+    c(0, cumsum(probs)),
+    rightmost.closed = TRUE
+  )
+  names(probs)[sample(g)]
+}
+
+## And wrap this up in a function to replicate it...
+
+partition <- function(df, n, probs) {
+  replicate(
+    n, 
+    split(df, random_group(nrow(df), probs)), 
+    simplify = FALSE
+  ) %>%
+    transpose() %>%
+    as_data_frame()
+}
+
+```
+
+```{r}
+
+skillcraft %>% group_by(Age,HoursPerWeek) %>% summarise(LeagueIndex = median(LeagueIndex)) %>%ggplot + aes(x = Age, y = HoursPerWeek,fill = LeagueIndex) + geom_tile() + viridis::scale_fill_viridis()
+```
+
+```{r}
+
+# Two ways to do this:
+# Find a way of subsetting from within dataframes so that column selections can be passed directly to knn.
+# Create columsn in boot which correspond to train_X, train_y, test_X, test_y, and then pass these objects to knn.Will need to pass _y objects as vectors?
+
+boot <- partition(
+  skillcraft %>% select(LeagueIndex, Age, HoursPerWeek), 
+  n = 5, 
+  probs = c(training = 0.8, test = 0.2)
+)
+
+
+
+boot %>%
+  dplyr::mutate(
+    preds = class::knn(
+      train = training, 
+      test = test, 
+      cl = training, 
+      k = 15
+    )
+  )
+  #,
+#  preds = map2(models, test, predict),
+#  diffs = map2(preds, test %>% map("mpg"), msd)
+
+
+```
+
+
+
+```{r,include=TRUE}
+sessionInfo()
+```
+---
+title: "Classification and Regression reminder"
+author: "Matthew Upson"
+date: "12 May 2016"
+output: html_document
+---
+
+
+```{r}
+
+knitr::opts_chunk$set(
+     include=TRUE,
+     echo=TRUE,
+     message = FALSE,
+     warning = FALSE,
+     error = FALSE,
+     dev = "svg"
+)
+
+
+library(readr)
+library(dplyr)
+library(magrittr)
+library(purrr)
+library(tidyr)
+
+# Data available here:
+#http://archive.ics.uci.edu/ml/datasets/SkillCraft1+Master+Table+Dataset#
+
+skillcraft <- "SkillCraft1_Dataset.csv" %>% 
+  read_csv %>%
+  mutate(
+    TotalHours = as.integer(TotalHours)
+  ) %>%
+  na.omit() %>%
+  dplyr::select(
+    APM, LeagueIndex, Age, HoursPerWeek, 
+    WorkersMade, ComplexUnitsMade, UniqueHotkeys
+    )
+
+# Create dataset splits
+
+msd <- function(x, y) sqrt(mean((x - y) ^ 2))
+
+random_group <- function(n, probs) {
+  probs <- probs / sum(probs)
+  g <- findInterval(seq(0, 1, length = n), c(0, cumsum(probs)),
+    rightmost.closed = TRUE)
+  names(probs)[sample(g)]
+}
+
+partition <- function(df, n, probs) {
+  replicate(n, split(df, random_group(nrow(df), probs)), FALSE) %>%
+    transpose() %>%
+    as_data_frame()
+}
+
+# Create ten replications of an 80:20 training:test split.
+
+boot <- partition(skillcraft, 10, c(training = 0.8, test = 0.2))
+
+# Use the whole dataset for cross validation later, but for now, just use a single instance.
+
+test <- boot[[1,1]]
+train <- boot[[1,2]]
+
+```
+
+# Supervised learning
+
+## Regression
+
+### Neural networks
+
+```{r}
+
+library(neuralnet)
+library(RItools)
+library(nnet)
+
+#TRAIN the model on the data
+#n <- names(data_train)
+#f <- as.formula(paste("G3 ~", paste(n[!n %in% "G3"], collapse = " + ")))
+# as pointed out by an R bloggers post, we mustwrite the formula and pass it as an argument
+# http://www.r-bloggers.com/fitting-a-neural-network-in-r-neuralnet-package/
+ 
+ 
+net_model <- neuralnet(
+  APM ~ LeagueIndex + Age + HoursPerWeek + WorkersMade + ComplexUnitsMade + UniqueHotkeys,
+  data = train, 
+  hidden = 5, 
+  linear.output = TRUE
+)
+
+print(net_model)
+
+devtools::source_url('https://gist.github.com/fawda123/7471137/raw/cd6e6a0b0bdb4e065c597e52165e5ac887f5fe95/nnet_plot_update.r')
+
+plot.nnet(net_model)
+
+# Where does plot.nnet come from?
+
+library(randomForest)
+
+train_tuned <- tuneRF(
+  x = train %>% dplyr::select(-APM),
+  y = train$APM,
+  trace = TRUE,
+  doBest = TRUE
+)
+
+train_rf <- randomForest(
+  y = train$APM,
+  x = train %>% dplyr::select(-APM),
+  ytest = test$APM,
+  xtest = test %>% dplyr::select(-APM),
+  mtry = 4,
+  data = train,
+  #ntree = 200,
+  proximity = TRUE,
+  importance = TRUE
+)
+
+plot(train_rf)
+varImpPlot(train_rf)
+importance(train_rf)
+
+
+```
+
+### Random forests
+
+```{r}
+
+library(randomForest)
+
+train_tuned <- tuneRF(
+  x = train %>% dplyr::select(-APM),
+  y = train$APM,
+  trace = TRUE,
+  doBest = TRUE
+)
+
+train_rf <- randomForest(
+  y = train$APM,
+  x = train %>% dplyr::select(-APM),
+  ytest = test$APM,
+  xtest = test %>% dplyr::select(-APM),
+  mtry = 4,
+  data = train,
+  #ntree = 200,
+  proximity = TRUE,
+  importance = TRUE
+)
+
+train_rf
+summary(train_rf)
+plot(train_rf)
+varImpPlot(train_rf)
+importance(train_rf)
+
+
+```
+
+## Classification
+
+### Support vector machines
+
+```{r}
+
+# http://rischanlab.github.io/SVM.html
+# https://cran.r-project.org/web/packages/e1071/vignettes/svmdoc.pdf
+
+library(e1071)
+
+svm_model <- svm(LeagueIndex ~ ., data=train)
+summary(svm_model)
+
+```
+
+### Logistic regression
+
+```{r}
+
+#install_github("ivyleavedtoadflax/vlrr")
+# http://www.machinegurning.com/rstats/logreg_math/
+# Need to do one vs all classification.
+
+#glm(LeagueIndex ~ ., data=train, family=binomial)
+
+```
+
+#### Specification
+
+$$\hat{Y}=\frac{1}{1+e^{-X^T\beta}}$$
+
+#### Example in R
+
+```{r}
+
+```
+
+
+# Unsupervised learning
+
+## k-means
