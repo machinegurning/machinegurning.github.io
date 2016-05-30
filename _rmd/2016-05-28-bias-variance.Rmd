@@ -83,6 +83,167 @@ partition <- function(df, n, probs) {
 ```
 
 ```{r}
+mse <- function(x, y) {
+  
+  x <- x %>% as.character %>% as.integer
+  y <- y %>% as.character %>% as.integer
+  
+  sqrt(mean((x - y) ^ 2))
+  
+}
+```
+
+
+```{r}
+
+D <- "data/2016-05-08-dummy_data.Rds" %>%
+  readRDS %>%
+  transmute(
+    x1 = X,
+    x2 = Y,
+    y = group_bit
+  )
+
+boot <- partition(
+  D, 
+  n = 5, 
+  probs = c(training = 0.8, test = 0.2)
+)
+
+X_train <- boot[["training"]][[1]][c("x1","x2")]
+X_test <- boot[["test"]][[1]][c("x1","x2")]
+y_train <- boot[["training"]][[1]][["y"]]
+y_test <- boot[["test"]][[1]]["y"]
+
+knn_pred <- class::knn(
+  train = X_train,
+  test = X_test,
+  cl = y_train,
+  k = 15
+) %>%
+  data.frame(
+    X_test, 
+    pred = .,
+    actual = y_test$y
+  ) %>%
+  as_data_frame
+
+
+```
+
+```{r}
+knn_pred %>%
+  summarise(
+    mse = mse(
+      pred, 
+      actual
+    )
+  )
+
+```
+
+```{r}
+
+# Works on one case
+
+boot %>%
+  dplyr::summarise(
+    mse = class::knn(
+      train = training[[1]][c("x1","x2")], 
+      test = test[[1]][c("x1","x2")], 
+      cl = training[[1]][["y"]], 
+      k = 15
+    ) %>% mse(.,test[[1]]["y"][[1]])
+  )
+
+# Now map over all cases
+
+boot %>%
+  dplyr::summarise(
+    mse = pmap(class::knn(
+      train = training[[1]][c("x1","x2")], 
+      test = test[[1]][c("x1","x2")], 
+      cl = training[[1]][["y"]], 
+      k = 15
+    ) %>% mse(.,test[[1]]["y"][[1]])
+    )
+  )
+
+```
+
+
+```{r}
+
+X <- skillcraft %>%
+  select(
+    Age,
+    HoursPerWeek
+  )
+
+y <- skillcraft %>%
+  mutate(
+    y = ifelse(LeagueIndex < 4, 0, 1)
+  ) %$% 
+  y
+
+x1_test_grid = seq(min(X$Age), min(X$Age), length = 800)
+x2_test_grid = seq(min(X$HoursPerWeek), min(X$HoursPerWeek), length = 800)
+
+X_test <- data.frame(
+  Age = rep(x1_test_grid, times = length(x2_test_grid)), 
+  HoursPerWeek = rep(x2_test_grid, each = length(x1_test_grid))
+)
+
+# Run knn on our training set X and output predictions into a dataframe alongside X_test.
+
+knn_pred <- class::knn(
+  train = X,
+  test = X_test,
+  cl = y,
+  k = 15
+) %>%
+  data.frame(
+    X_test, 
+    pred = .
+  )
+
+# Now plot,using geom_contour to draw the decision boundary.
+
+knn_pred %>%
+  ggplot +
+  aes(
+    x = Age,
+    y = HoursPerWeek,
+    colour = y
+  ) +
+  geom_point(
+    data = skillcraft,
+    aes(
+      colour = factor(LeagueIndex)#,
+      #hape = prediction
+    ),
+    size = 3
+  ) +
+  geom_contour(
+    aes(
+      z = as.integer(pred)
+    ),
+    size = 0.4,
+    colour = "black",
+    bins = 1
+  ) +
+  coord_cartesian(
+    xlim = c(-2.2,2.8),
+    ylim = c(-3,3.5)
+  ) +
+  xlab("X") +
+  ylab("Y")
+
+
+```
+
+
+```{r}
 
 skillcraft %>% group_by(Age,HoursPerWeek) %>% summarise(LeagueIndex = median(LeagueIndex)) %>%ggplot + aes(x = Age, y = HoursPerWeek,fill = LeagueIndex) + geom_tile() + viridis::scale_fill_viridis()
 ```
@@ -102,11 +263,16 @@ boot <- partition(
 
 
 boot %>%
+  mutate(
+    preds = length(training[[1]][["Age"]])
+    )
+
+boot %>%
   dplyr::mutate(
     preds = class::knn(
-      train = training, 
-      test = test, 
-      cl = training, 
+      train = training[[1]][["Age"]], 
+      test = test[[1]][["Age"]], 
+      cl = base::sample(x= c(0,1),size = length,replace=TRUE), 
       k = 15
     )
   )
