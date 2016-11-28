@@ -1,0 +1,41 @@
+---
+title: "Using git without github"
+author: matt_upson
+comments: yes
+date: '2016-11-14'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Version control without the cloud"
+published: FALSE
+status: process
+tags:
+- version control
+- git
+- github  
+- bitbucket
+- gitlab
+categories: Rstats
+output: html_document
+---
+
+I'm always banging on about version control.
+A software developer wouldn't sneeze without first commiting their work to a repository, but for analysts it is a different story.
+
+Assuming an analyst is sold on the idea of version control for those working in large organisations, there can still be strong cultural and infrastructural barriers to overcome.
+
+In this post, I commit to pixels the discussion I have had several times in recent months, and give some advice on how to make version control work for you in hostil environments.
+
+# Some quick concepts
+
+So first off, I'm talking about git.
+Other version control software does exist, but I've not used it; everyone in my organisation uses git, and I am perfectly happy with it.
+
+git &ne; [github] 
+
+but
+
+github &sim; gitlab &sim; bitbucket
+
+and I guess
+
+
