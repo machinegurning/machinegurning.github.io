@@ -11,3 +11,5 @@ _asset_bundler_cache
 *.Rproj
 .Rhistory
 .jekyll-metadata
+packrat/lib*/
+cache
