@@ -5,7 +5,7 @@ comments: yes
 date: '2017-01-03'
 modified: 2017-01-04
 layout: post
-excerpt: "Back to basics with ANNs"
+excerpt: "Back to basics with Artificial Neural Networks"
 published: true
 status: processed
 tags:
