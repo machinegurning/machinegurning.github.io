@@ -24,7 +24,7 @@ One of my New Year resolutions is to get to grips with deep learning.
 I thought a good place to start would be a refresher into 'shallow' neural networks, and that is what this post and the one that follows it will be about.
 I'll go through the maths behind a quick dirty neural network, and implement it in R.
  
-I'm using as my sources the tome [Elements of Statistical Learning](http://statweb.stanford.edu/~tibs/ElemStatLearn/), Andrew Ng's excellent [machine learning](https://www.coursera.org/learn/machine-learning) course of coursera, and a short course I have been doing on Udemy [Deep Learning in Python](https://www.udemy.com/data-science-deep-learning-in-python/learn/v4/).
+I'm using as my sources the tome [Elements of Statistical Learning](http://statweb.stanford.edu/~tibs/ElemStatLearn/), Andrew Ng's excellent [machine learning](https://www.coursera.org/learn/machine-learning) course on coursera, and a short course I have been doing on Udemy: [Deep Learning in Python](https://www.udemy.com/data-science-deep-learning-in-python/learn/v4/).
 I can recommend them all.
  
 ## An example
@@ -42,7 +42,7 @@ I'll explain what this is for as we go along.
 ## The maths
  
 So how does it work? 
-Once we have set the architecture of the network, there are two processes that we can do with out network: training, and prediction.
+Once we have set the architecture of the network, there are two processes that we can do with our network: training, and prediction.
  
 For predicting, Hastie et al. give the following equations:
  
@@ -467,7 +467,9 @@ $$
  
 This rings true for the other non-linearities, like softmax, which I'll come back to in my next post.
  
- 
+## References
+
+Hastie, T., Tibshirani, R., and Friedman, J. (2009). *The Elements of Statistical Learning (Second Edition)*. Springer-Verlag. 763 pages. 
 
 {% highlight r %}
 devtools::session_info()
