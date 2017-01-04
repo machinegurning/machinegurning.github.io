@@ -304,38 +304,38 @@ nn_predict(X, a, b)
 
 {% highlight text %}
 ##                          pred
-## Mazda RX4           0.4017723
-## Mazda RX4 Wag       0.4032874
-## Datsun 710          0.4111417
-## Hornet 4 Drive      0.3864859
-## Hornet Sportabout   0.3727202
-## Valiant             0.3952068
-## Duster 360          0.3735025
-## Merc 240D           0.4002459
-## Merc 230            0.4105804
-## Merc 280            0.3893588
-## Merc 280C           0.3942773
-## Merc 450SE          0.3849295
-## Merc 450SL          0.3837862
-## Merc 450SLC         0.3896704
-## Cadillac Fleetwood  0.3796845
-## Lincoln Continental 0.3794392
-## Chrysler Imperial   0.3711674
-## Fiat 128            0.3990558
-## Honda Civic         0.4018011
-## Toyota Corolla      0.3990539
-## Toyota Corona       0.4188858
-## Dodge Challenger    0.3835090
-## AMC Javelin         0.3883695
-## Camaro Z28          0.3776056
-## Pontiac Firebird    0.3689619
-## Fiat X1-9           0.4076938
-## Porsche 914-2       0.3998643
-## Lotus Europa        0.3783167
-## Ford Pantera L      0.3622460
-## Ferrari Dino        0.3887067
-## Maserati Bora       0.3585910
-## Volvo 142E          0.4120196
+## Mazda RX4           0.5081915
+## Mazda RX4 Wag       0.5108642
+## Datsun 710          0.4964582
+## Hornet 4 Drive      0.5558984
+## Hornet Sportabout   0.6119516
+## Valiant             0.5604326
+## Duster 360          0.6066331
+## Merc 240D           0.4928046
+## Merc 230            0.4909520
+## Merc 280            0.5102055
+## Merc 280C           0.5067553
+## Merc 450SE          0.6079788
+## Merc 450SL          0.6036579
+## Merc 450SLC         0.5996071
+## Cadillac Fleetwood  0.5997609
+## Lincoln Continental 0.6085943
+## Chrysler Imperial   0.6297462
+## Fiat 128            0.5176561
+## Honda Civic         0.5119202
+## Toyota Corolla      0.5165052
+## Toyota Corona       0.5050349
+## Dodge Challenger    0.5956881
+## AMC Javelin         0.5977754
+## Camaro Z28          0.6079742
+## Pontiac Firebird    0.6190061
+## Fiat X1-9           0.4997740
+## Porsche 914-2       0.5109609
+## Lotus Europa        0.5131413
+## Ford Pantera L      0.5380287
+## Ferrari Dino        0.5031797
+## Maserati Bora       0.5385301
+## Volvo 142E          0.4996109
 {% endhighlight %}
  
 Great, so the 'feed-forward' part works - we are able to predict using the neural network. 
@@ -428,18 +428,13 @@ X %*% a
 # What about when m = 5
  
 X <- matrix(rep(1,10), nrow = 5, ncol = 2)
-X %*% a
+t(a) %*% X
 {% endhighlight %}
 
 
 
 {% highlight text %}
-##      [,1]
-## [1,]   30
-## [2,]   30
-## [3,]   30
-## [4,]   30
-## [5,]   30
+## Error in t(a) %*% X: non-conformable arguments
 {% endhighlight %}
 
 
