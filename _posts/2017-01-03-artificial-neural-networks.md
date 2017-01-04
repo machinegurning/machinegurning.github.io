@@ -270,7 +270,7 @@ nn_predict(X, a, b)
  
 So far so good. 
 Now what about with the `mtcars` dataset.
-Note that on real data it is noral practice to normalise each variable to a mean of $0$ and a standard deviation of $1$; failing to do so can have a very negative effect on the training of the network.
+Note that on real data it is normal practice to normalise each variable to a mean of $0$ and a standard deviation of $1$; failing to do so can have a very negative effect on the training of the network.
  
 
 {% highlight r %}
