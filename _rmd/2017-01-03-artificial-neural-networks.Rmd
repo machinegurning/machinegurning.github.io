@@ -55,7 +55,7 @@ I'll explain what this is for as we go along.
 So how does it work? 
 Once we have set the architecture of the network, there are two processes that we can do with out network: training, and prediction.
 
-For training, Hastie et al. give the following equations:
+For predicting, Hastie et al. give the following equations:
 
 $$
 \begin{array}{ll}  
