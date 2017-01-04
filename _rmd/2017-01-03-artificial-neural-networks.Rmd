@@ -45,7 +45,7 @@ I'm going to deal with a very simple neural network here: a single hidden layer 
 I'll use just two input nodes $x_1$ and $x_2$, set the hidden layer to have just four nodes ($z_1$, $z_2$, $z_3$, and $z_4$), with a single output node $y$.
 So, my obligatory network diagram should look like: 
 
-![Neural network diagram](http://www.machinegurning.com/figures/2017-01-03-neural_network.svg)
+<img src='http://www.machinegurning.com/figures/2017-01-03-neural_network.svg' alt='Neural Network' style='display: block; margin: auto; padding: 10px 10px;'>
 
 Note that I have included additional 'bias' nodes to $X$ and $Z$ (the top ones: $x_0$ and $z_0$), which are always equal to one.
 I'll explain what this is for as we go along.
@@ -324,7 +324,6 @@ $$
 
 This can be restated in matrix terms as $y=\alpha^{T}x$ where $\alpha$ is a vector of weights, but if we leave $x$ unaltered, we get the following:  
 
-
 $$
 \begin{array}{rl}
 h(\alpha) = & \alpha^Tx \\
@@ -333,6 +332,7 @@ h(\alpha) = & \alpha^Tx \\
 = & \begin{bmatrix}10&20\end{bmatrix} \\
 \end{array}
 $$
+
 So that's no good as a vector multiplied by a scalar is still a vector. 
 If we actually want to get $30$, we need to add an additional column to $x_1$, converting it to a matrix $X$, containing columns $x_0$, and $x_1$. 
 Note that when $\alpha^{T}X$ works for a single column vector, for the matrix $X$ we simply use $X\alpha$.  

@@ -34,7 +34,7 @@ I'm going to deal with a very simple neural network here: a single hidden layer 
 I'll use just two input nodes $x_1$ and $x_2$, set the hidden layer to have just four nodes ($z_1$, $z_2$, $z_3$, and $z_4$), with a single output node $y$.
 So, my obligatory network diagram should look like: 
  
-![Neural network diagram](http://www.machinegurning.com/figures/2017-01-03-neural_network.svg)
+<img src='http://www.machinegurning.com/figures/2017-01-03-neural_network.svg' alt='Neural Network' style='display: block; margin: auto; padding: 10px 10px;'>
  
 Note that I have included additional 'bias' nodes to $X$ and $Z$ (the top ones: $x_0$ and $z_0$), which are always equal to one.
 I'll explain what this is for as we go along.
@@ -304,38 +304,38 @@ nn_predict(X, a, b)
 
 {% highlight text %}
 ##                          pred
-## Mazda RX4           0.4648551
-## Mazda RX4 Wag       0.4828045
-## Datsun 710          0.4349799
-## Hornet 4 Drive      0.4616735
-## Hornet Sportabout   0.4630808
-## Valiant             0.4493459
-## Duster 360          0.4218189
-## Merc 240D           0.5183592
-## Merc 230            0.5770238
-## Merc 280            0.4968837
-## Merc 280C           0.5044538
-## Merc 450SE          0.4539012
-## Merc 450SL          0.4500233
-## Merc 450SLC         0.4514534
-## Cadillac Fleetwood  0.5420298
-## Lincoln Continental 0.5412016
-## Chrysler Imperial   0.5430832
-## Fiat 128            0.4652174
-## Honda Civic         0.4804092
-## Toyota Corolla      0.4658337
-## Toyota Corona       0.4540290
-## Dodge Challenger    0.4253224
-## AMC Javelin         0.4419709
-## Camaro Z28          0.4400101
-## Pontiac Firebird    0.4920696
-## Fiat X1-9           0.4398518
-## Porsche 914-2       0.5240027
-## Lotus Europa        0.4217882
-## Ford Pantera L      0.4472074
-## Ferrari Dino        0.4507654
-## Maserati Bora       0.4432861
-## Volvo 142E          0.4674482
+## Mazda RX4           0.4017723
+## Mazda RX4 Wag       0.4032874
+## Datsun 710          0.4111417
+## Hornet 4 Drive      0.3864859
+## Hornet Sportabout   0.3727202
+## Valiant             0.3952068
+## Duster 360          0.3735025
+## Merc 240D           0.4002459
+## Merc 230            0.4105804
+## Merc 280            0.3893588
+## Merc 280C           0.3942773
+## Merc 450SE          0.3849295
+## Merc 450SL          0.3837862
+## Merc 450SLC         0.3896704
+## Cadillac Fleetwood  0.3796845
+## Lincoln Continental 0.3794392
+## Chrysler Imperial   0.3711674
+## Fiat 128            0.3990558
+## Honda Civic         0.4018011
+## Toyota Corolla      0.3990539
+## Toyota Corona       0.4188858
+## Dodge Challenger    0.3835090
+## AMC Javelin         0.3883695
+## Camaro Z28          0.3776056
+## Pontiac Firebird    0.3689619
+## Fiat X1-9           0.4076938
+## Porsche 914-2       0.3998643
+## Lotus Europa        0.3783167
+## Ford Pantera L      0.3622460
+## Ferrari Dino        0.3887067
+## Maserati Bora       0.3585910
+## Volvo 142E          0.4120196
 {% endhighlight %}
  
 Great, so the 'feed-forward' part works - we are able to predict using the neural network. 
@@ -367,7 +367,6 @@ $$
  
 This can be restated in matrix terms as $y=\alpha^{T}x$ where $\alpha$ is a vector of weights, but if we leave $x$ unaltered, we get the following:  
  
- 
 $$
 \begin{array}{rl}
 h(\alpha) = & \alpha^Tx \\
@@ -376,6 +375,7 @@ h(\alpha) = & \alpha^Tx \\
 = & \begin{bmatrix}10&20\end{bmatrix} \\
 \end{array}
 $$
+ 
 So that's no good as a vector multiplied by a scalar is still a vector. 
 If we actually want to get $30$, we need to add an additional column to $x_1$, converting it to a matrix $X$, containing columns $x_0$, and $x_1$. 
 Note that when $\alpha^{T}X$ works for a single column vector, for the matrix $X$ we simply use $X\alpha$.  
@@ -490,15 +490,23 @@ devtools::session_info()
 ##  tz       GB                          
 ##  date     2017-01-04                  
 ## 
-##  package  * version date       source                                   
-##  devtools   1.12.0  2016-06-24 CRAN (R 3.3.2)                           
-##  digest     0.6.10  2016-08-02 CRAN (R 3.2.3)                           
-##  evaluate   0.10    2016-10-11 CRAN (R 3.3.2)                           
-##  knitr      1.15.1  2016-11-22 CRAN (R 3.3.2)                           
-##  magrittr   1.5     2014-11-22 CRAN (R 3.2.3)                           
-##  memoise    1.0.0   2016-01-29 CRAN (R 3.2.3)                           
-##  rmd2md     0.1.2   2016-10-23 Github (ivyleavedtoadflax/rmd2md@3fa6541)
-##  stringi    1.1.2   2016-10-01 CRAN (R 3.2.3)                           
-##  stringr    1.1.0   2016-08-19 CRAN (R 3.2.3)                           
-##  withr      1.0.2   2016-06-20 CRAN (R 3.2.3)
+##  package    * version date       source                                   
+##  backports    1.0.4   2016-10-24 CRAN (R 3.3.2)                           
+##  devtools     1.12.0  2016-06-24 CRAN (R 3.3.2)                           
+##  digest       0.6.10  2016-08-02 CRAN (R 3.2.3)                           
+##  evaluate     0.10    2016-10-11 CRAN (R 3.3.2)                           
+##  htmltools    0.3.5   2016-03-21 CRAN (R 3.2.3)                           
+##  knitr        1.15.1  2016-11-22 CRAN (R 3.3.2)                           
+##  magrittr     1.5     2014-11-22 CRAN (R 3.2.3)                           
+##  memoise      1.0.0   2016-01-29 CRAN (R 3.2.3)                           
+##  Rcpp         0.12.8  2016-11-17 CRAN (R 3.3.2)                           
+##  rmarkdown    1.2     2016-11-21 CRAN (R 3.3.2)                           
+##  rmd2md       0.1.2   2016-10-23 Github (ivyleavedtoadflax/rmd2md@3fa6541)
+##  rprojroot    1.1     2016-10-29 CRAN (R 3.3.2)                           
+##  rsconnect    0.6     2016-11-21 CRAN (R 3.3.2)                           
+##  rstudioapi   0.6     2016-06-27 CRAN (R 3.2.3)                           
+##  stringi      1.1.2   2016-10-01 CRAN (R 3.2.3)                           
+##  stringr      1.1.0   2016-08-19 CRAN (R 3.2.3)                           
+##  withr        1.0.2   2016-06-20 CRAN (R 3.2.3)                           
+##  yaml         2.1.14  2016-11-12 CRAN (R 3.3.2)
 {% endhighlight %}
