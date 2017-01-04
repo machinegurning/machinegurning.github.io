@@ -3,7 +3,7 @@ title: "Newyearal Networks"
 author: matt_upson
 comments: yes
 date: '2017-01-03'
-modified: 2017-01-03
+modified: 2017-01-04
 layout: post
 excerpt: "Back to basics with ANNs"
 published: true
@@ -34,7 +34,7 @@ I'm going to deal with a very simple neural network here: a single hidden layer 
 I'll use just two input nodes $x_1$ and $x_2$, set the hidden layer to have just four nodes ($z_1$, $z_2$, $z_3$, and $z_4$), with a single output node $y$.
 So, my obligatory network diagram should look like: 
  
-![Neural network diagram](../figures/2017-01-03-neural_network.svg)
+![Neural network diagram](http://www.machinegurning.com/figures/2017-01-03-neural_network.svg)
  
 Note that I have included additional 'bias' nodes to $X$ and $Z$ (the top ones: $x_0$ and $z_0$), which are always equal to one.
 I'll explain what this is for as we go along.
@@ -68,7 +68,9 @@ $$
 The second equation is essentially the same except it does not apply the logistic function, instead passing onto the third equation where the function $g_k$ is applied instead.
 Here $g_k$ is the softmax function: 
  
-$$g_k(T) = \dfrac{e^{T_k}}{\sum^K_{l=1}e^{T_l}}$$.
+$$
+g_k(T) = \dfrac{e^{T_k}}{\sum^K_{l=1}e^{T_l}}
+$$
  
 To keep this example really simple I'm going to use the sigmoid logistic function throughout, but I'll come back to talking about softmax in a later post.
 Note that $K$ is the number of nodes in the vector $Z$, so again, we know that $\beta$ must have the same number of rows as $Z$ ($K$) in order that it has the correct number of columns when transposed and multiplied with $Z$.
@@ -81,9 +83,11 @@ Z_m = \sigma(\alpha_m^TX),\:\text{for}\:m=\{1, \ldots, M\} \\
 y = \sigma(\beta_k^TX),\:\text{for}\:k=\{1, \ldots, K\}
 \end{array}
 $$
+ 
 If you've done any of Andrew Ng's machine learning course, or read any of my earlier blogs about this, this should be starting to look awfully familiar - we are essentially using the vectorised form of logistic regression.
  
 Written out in full, for the network architecture I outlined above, $Z$ becomes:
+ 
  
 $$
 \begin{array}{ll}  
@@ -94,6 +98,7 @@ z_3 = \sigma(\alpha_{0,2}x_0 + \alpha_{1,2}x_1 + \alpha_{2,2} x_2) \\
 z_4 = \sigma(\alpha_{0,3}x_0 + \alpha_{1,3}x_1 + \alpha_{2,3} x_2) \\
 \end{array}
 $$
+ 
 So essentially we need to do an element-wise multiplication of the input matrix $X$, and a weight corresponding to each element of the vector $Z$.
 From this we know that their are $M\times K$ weights in $\alpha$, and since we already know that $\alpha$ must have the same number of rows as $X$, we know that it must have the same number of columns as there are nodes in $Z$ (not counting the bias node $Z_0$ which is added later).
  
@@ -299,38 +304,38 @@ nn_predict(X, a, b)
 
 {% highlight text %}
 ##                          pred
-## Mazda RX4           0.3677705
-## Mazda RX4 Wag       0.3691444
-## Datsun 710          0.3350913
-## Hornet 4 Drive      0.4076474
-## Hornet Sportabout   0.4619173
-## Valiant             0.4215461
-## Duster 360          0.4710602
-## Merc 240D           0.3393468
-## Merc 230            0.3467595
-## Merc 280            0.4091247
-## Merc 280C           0.4117780
-## Merc 450SE          0.4695874
-## Merc 450SL          0.4692426
-## Merc 450SLC         0.4698588
-## Cadillac Fleetwood  0.4720700
-## Lincoln Continental 0.4737782
-## Chrysler Imperial   0.4753626
-## Fiat 128            0.3333903
-## Honda Civic         0.3173363
-## Toyota Corolla      0.3316148
-## Toyota Corona       0.3638365
-## Dodge Challenger    0.4616452
-## AMC Javelin         0.4574753
-## Camaro Z28          0.4666696
-## Pontiac Firebird    0.4639245
-## Fiat X1-9           0.3289808
-## Porsche 914-2       0.3166121
-## Lotus Europa        0.3321364
-## Ford Pantera L      0.4466139
-## Ferrari Dino        0.4030807
-## Maserati Bora       0.4815626
-## Volvo 142E          0.3385647
+## Mazda RX4           0.4648551
+## Mazda RX4 Wag       0.4828045
+## Datsun 710          0.4349799
+## Hornet 4 Drive      0.4616735
+## Hornet Sportabout   0.4630808
+## Valiant             0.4493459
+## Duster 360          0.4218189
+## Merc 240D           0.5183592
+## Merc 230            0.5770238
+## Merc 280            0.4968837
+## Merc 280C           0.5044538
+## Merc 450SE          0.4539012
+## Merc 450SL          0.4500233
+## Merc 450SLC         0.4514534
+## Cadillac Fleetwood  0.5420298
+## Lincoln Continental 0.5412016
+## Chrysler Imperial   0.5430832
+## Fiat 128            0.4652174
+## Honda Civic         0.4804092
+## Toyota Corolla      0.4658337
+## Toyota Corona       0.4540290
+## Dodge Challenger    0.4253224
+## AMC Javelin         0.4419709
+## Camaro Z28          0.4400101
+## Pontiac Firebird    0.4920696
+## Fiat X1-9           0.4398518
+## Porsche 914-2       0.5240027
+## Lotus Europa        0.4217882
+## Ford Pantera L      0.4472074
+## Ferrari Dino        0.4507654
+## Maserati Bora       0.4432861
+## Volvo 142E          0.4674482
 {% endhighlight %}
  
 Great, so the 'feed-forward' part works - we are able to predict using the neural network. 
@@ -349,7 +354,7 @@ $$
 y = a + bx + \epsilon
 $$
  
-For weights $a = 10$ and $b=20$, and $x=1$ (and ignoring error $\epsilon$), we would expect $y=30$:
+For weights $a = 10$ and $b=20$, and $x=1$ (and ignoring error $\epsilon$), we would expect $y=30$:  
  
 $$
 \begin{array}{rl} 
@@ -360,7 +365,8 @@ y = &30 \\
 \end{array}
 $$
  
-This can be restated in matrix terms as $y=\alpha^{T}x$ where $\alpha$ is a vector of weights, but if we leave $x$ unaltered, we get the following:
+This can be restated in matrix terms as $y=\alpha^{T}x$ where $\alpha$ is a vector of weights, but if we leave $x$ unaltered, we get the following:  
+ 
  
 $$
 \begin{array}{rl}
@@ -372,7 +378,7 @@ h(\alpha) = & \alpha^Tx \\
 $$
 So that's no good as a vector multiplied by a scalar is still a vector. 
 If we actually want to get $30$, we need to add an additional column to $x_1$, converting it to a matrix $X$, containing columns $x_0$, and $x_1$. 
-Note that when $\alpha^{T}X$ works for a single column vector, for the matrix $X$ we simply use $X\alpha$.
+Note that when $\alpha^{T}X$ works for a single column vector, for the matrix $X$ we simply use $X\alpha$.  
  
 $$
 \begin{array}{rl}
@@ -482,30 +488,17 @@ devtools::session_info()
 ##  language en_GB:en                    
 ##  collate  en_GB.UTF-8                 
 ##  tz       GB                          
-##  date     2017-01-03                  
+##  date     2017-01-04                  
 ## 
-##  package    * version date       source                                   
-##  assertthat   0.1     2013-12-06 CRAN (R 3.2.3)                           
-##  backports    1.0.4   2016-10-24 CRAN (R 3.3.2)                           
-##  crayon       1.3.2   2016-06-28 cran (@1.3.2)                            
-##  devtools     1.12.0  2016-06-24 CRAN (R 3.3.2)                           
-##  digest       0.6.10  2016-08-02 CRAN (R 3.2.3)                           
-##  evaluate     0.10    2016-10-11 CRAN (R 3.3.2)                           
-##  htmltools    0.3.5   2016-03-21 CRAN (R 3.2.3)                           
-##  knitr        1.15.1  2016-11-22 CRAN (R 3.3.2)                           
-##  magrittr     1.5     2014-11-22 CRAN (R 3.2.3)                           
-##  memoise      1.0.0   2016-01-29 CRAN (R 3.2.3)                           
-##  R6           2.2.0   2016-10-05 CRAN (R 3.2.3)                           
-##  Rcpp         0.12.8  2016-11-17 CRAN (R 3.3.2)                           
-##  rmarkdown    1.2     2016-11-21 CRAN (R 3.3.2)                           
-##  rmd2md       0.1.2   2016-10-23 Github (ivyleavedtoadflax/rmd2md@3fa6541)
-##  rprojroot    1.1     2016-10-29 CRAN (R 3.3.2)                           
-##  rsconnect    0.6     2016-11-21 CRAN (R 3.3.2)                           
-##  rstudioapi   0.6     2016-06-27 CRAN (R 3.2.3)                           
-##  stringi      1.1.2   2016-10-01 CRAN (R 3.2.3)                           
-##  stringr      1.1.0   2016-08-19 CRAN (R 3.2.3)                           
-##  testthat   * 1.0.2   2016-04-23 cran (@1.0.2)                            
-##  tibble       1.2     2016-08-26 CRAN (R 3.2.3)                           
-##  withr        1.0.2   2016-06-20 CRAN (R 3.2.3)                           
-##  yaml         2.1.14  2016-11-12 CRAN (R 3.3.2)
+##  package  * version date       source                                   
+##  devtools   1.12.0  2016-06-24 CRAN (R 3.3.2)                           
+##  digest     0.6.10  2016-08-02 CRAN (R 3.2.3)                           
+##  evaluate   0.10    2016-10-11 CRAN (R 3.3.2)                           
+##  knitr      1.15.1  2016-11-22 CRAN (R 3.3.2)                           
+##  magrittr   1.5     2014-11-22 CRAN (R 3.2.3)                           
+##  memoise    1.0.0   2016-01-29 CRAN (R 3.2.3)                           
+##  rmd2md     0.1.2   2016-10-23 Github (ivyleavedtoadflax/rmd2md@3fa6541)
+##  stringi    1.1.2   2016-10-01 CRAN (R 3.2.3)                           
+##  stringr    1.1.0   2016-08-19 CRAN (R 3.2.3)                           
+##  withr      1.0.2   2016-06-20 CRAN (R 3.2.3)
 {% endhighlight %}
