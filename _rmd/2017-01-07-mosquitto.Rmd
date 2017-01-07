@@ -1,0 +1,72 @@
+---
+title: "Mosquitto MQTT broker"
+author: matt_upson
+comments: yes
+date: '2017-01-07'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Finally getting back to internet-of-things"
+published: TRUE
+status: draft
+tags:
+- internet of things
+- raspberry pi
+- mosquitto
+- mqtt
+categories: iot
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#checkpoint::setSnapshot('2016-12-20')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = TRUE
+  )
+```
+
+```bash
+
+sudo wget http://repo.mosquitto.org/debian/mosquitto-wheezy.list
+
+sudo apt-key add mosquitto-repo.gpg.key
+
+cd /etc/apt/sources.list.d/
+
+sudo wget http://repo.mosquitto.org/debian/mosquitto-wheezy.list
+
+sudo apt-get update
+
+sudo apt-get install mosquitto mosquitto-clients
+
+mosquitto_sub -d -t hello/world
+mosquitto_pub -d -t hello/world -m "Greetings from Terminal window 2!"
+
+#sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6
+
+
+sudo apt-get install mogodb-server
+
+sudo mkdir -p /data/db
+sudo service mongod start
+
+sudo mongod
+
+show dbs
+
+# Create logging db
+
+use logging
+
+
+```
+
+# Sources
+
+[Instructables](http://www.instructables.com/id/Installing-MQTT-BrokerMosquitto-on-Raspberry-Pi/)
+[MongoDB docs]()
