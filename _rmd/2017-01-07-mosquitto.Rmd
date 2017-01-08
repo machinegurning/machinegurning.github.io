@@ -63,6 +63,22 @@ show dbs
 
 use logging
 
+###
+
+sudo apt-get install curl
+
+curl -O http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-armv7l.sh
+
+sudo apt-get install git
+sudo apt-get install vim
+
+
+
+
+
+
+curl -sSL https://get.docker.com | sh
+sudo usermod -aG docker matthew
 
 ```
 
@@ -70,3 +86,4 @@ use logging
 
 [Instructables](http://www.instructables.com/id/Installing-MQTT-BrokerMosquitto-on-Raspberry-Pi/)
 [MongoDB docs]()
+[Building an IoT system with Python](http://jasonbrazeal.com/blog/how-to-build-a-simple-iot-system-with-python/)
