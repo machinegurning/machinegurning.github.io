@@ -38,7 +38,7 @@ I introduce it here to help those who are looking for a Data Science related res
 In order to boost one's position up the Kaggle leader board one should employ algorithms that have conistently scored highly or won competitions (through fine tuning of parameters).
 Broadly, Kaggle competitions are won through use of [Deep Learning](https://en.wikipedia.org/wiki/Deep_learning) or [Extreme Gradient Boosting](http://homes.cs.washington.edu/~tqchen/2016/03/10/story-and-lessons-behind-the-evolution-of-xgboost.html) (XGBoost) methods ([Chen & Guestrin, 2016](https://arxiv.org/abs/1603.02754)).  
 
-We introduce a gradient boosted tree using the (award winning)[http://stat-computing.org/awards/jmc/winners.html] `xgboost` which comes with lots of tuneable parameters to allow optimisation of a model.
+We introduce a gradient boosted tree using the [award winning](http://stat-computing.org/awards/jmc/winners.html) `xgboost` which comes with lots of tuneable parameters to allow optimisation of a model.
 Following the [Unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), `xgboost` performs one thing well and is easily integrated with other data science packages or processes.
 To demonstrate, we also introduce  using `caret` to create simple dummy (binary) variables prior to model building.  
 
