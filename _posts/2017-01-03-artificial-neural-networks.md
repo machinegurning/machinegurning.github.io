@@ -304,38 +304,38 @@ nn_predict(X, a, b)
 
 {% highlight text %}
 ##                          pred
-## Mazda RX4           0.4007562
-## Mazda RX4 Wag       0.3968762
-## Datsun 710          0.4338604
-## Hornet 4 Drive      0.5191740
-## Hornet Sportabout   0.4616576
-## Valiant             0.5197047
-## Duster 360          0.4460470
-## Merc 240D           0.4976472
-## Merc 230            0.4866810
-## Merc 280            0.5043584
-## Merc 280C           0.5067196
-## Merc 450SE          0.4405473
-## Merc 450SL          0.4515041
-## Merc 450SLC         0.4538436
-## Cadillac Fleetwood  0.4510035
-## Lincoln Continental 0.4393097
-## Chrysler Imperial   0.4237618
-## Fiat 128            0.4355282
-## Honda Civic         0.4448787
-## Toyota Corolla      0.4426178
-## Toyota Corona       0.4761914
-## Dodge Challenger    0.4715696
-## AMC Javelin         0.4643941
-## Camaro Z28          0.4218127
-## Pontiac Firebird    0.4594842
-## Fiat X1-9           0.4424601
-## Porsche 914-2       0.3826460
-## Lotus Europa        0.4591158
-## Ford Pantera L      0.3973150
-## Ferrari Dino        0.3992677
-## Maserati Bora       0.3943579
-## Volvo 142E          0.4209870
+## Mazda RX4           0.3548774
+## Mazda RX4 Wag       0.3511640
+## Datsun 710          0.2973615
+## Hornet 4 Drive      0.2728596
+## Hornet Sportabout   0.3278089
+## Valiant             0.2655280
+## Duster 360          0.3385054
+## Merc 240D           0.2843532
+## Merc 230            0.2629109
+## Merc 280            0.2808949
+## Merc 280C           0.2694809
+## Merc 450SE          0.3238025
+## Merc 450SL          0.3196923
+## Merc 450SLC         0.3065954
+## Cadillac Fleetwood  0.3094050
+## Lincoln Continental 0.3151334
+## Chrysler Imperial   0.3437211
+## Fiat 128            0.3283872
+## Honda Civic         0.3270231
+## Toyota Corolla      0.3291828
+## Toyota Corona       0.2633779
+## Dodge Challenger    0.3175960
+## AMC Javelin         0.3048592
+## Camaro Z28          0.3400135
+## Pontiac Firebird    0.3373499
+## Fiat X1-9           0.3028328
+## Porsche 914-2       0.3790375
+## Lotus Europa        0.3698069
+## Ford Pantera L      0.4161256
+## Ferrari Dino        0.3995544
+## Maserati Bora       0.4261293
+## Volvo 142E          0.2963969
 {% endhighlight %}
  
 Great, so the 'feed-forward' part works - we are able to predict using the neural network. 
@@ -488,40 +488,162 @@ devtools::session_info()
 ##  tz       GB                          
 ##  date     2017-01-14                  
 ## 
-##  package    * version date       source                                   
-##  assertthat   0.1     2013-12-06 CRAN (R 3.2.3)                           
-##  backports    1.0.4   2016-10-24 CRAN (R 3.3.2)                           
-##  checkpoint   0.3.18  2016-10-31 CRAN (R 3.3.2)                           
-##  colorspace   1.3-1   2016-11-18 CRAN (R 3.3.2)                           
-##  curl         2.3     2016-11-24 CRAN (R 3.3.2)                           
-##  DBI          0.5-1   2016-09-10 CRAN (R 3.2.3)                           
-##  devtools     1.12.0  2016-06-24 CRAN (R 3.3.2)                           
-##  digest       0.6.10  2016-08-02 CRAN (R 3.2.3)                           
-##  dplyr        0.5.0   2016-06-24 CRAN (R 3.2.3)                           
-##  evaluate     0.10    2016-10-11 CRAN (R 3.3.2)                           
-##  ggplot2      2.2.0   2016-11-11 CRAN (R 3.3.2)                           
-##  git2r        0.16.0  2016-11-20 CRAN (R 3.3.2)                           
-##  gtable       0.2.0   2016-02-26 CRAN (R 3.2.3)                           
-##  htmltools    0.3.5   2016-03-21 CRAN (R 3.2.3)                           
-##  httr         1.2.1   2016-07-03 CRAN (R 3.2.3)                           
-##  jsonlite     1.1     2016-09-14 CRAN (R 3.2.3)                           
-##  knitr        1.15.1  2016-11-22 CRAN (R 3.3.2)                           
-##  lazyeval     0.2.0   2016-06-12 CRAN (R 3.3.2)                           
-##  magrittr     1.5     2014-11-22 CRAN (R 3.2.3)                           
-##  memoise      1.0.0   2016-01-29 CRAN (R 3.2.3)                           
-##  munsell      0.4.3   2016-02-13 CRAN (R 3.2.3)                           
-##  plyr         1.8.4   2016-06-08 CRAN (R 3.2.3)                           
-##  R6           2.2.0   2016-10-05 CRAN (R 3.2.3)                           
-##  Rcpp         0.12.8  2016-11-17 CRAN (R 3.3.2)                           
-##  readr        1.0.0   2016-08-03 CRAN (R 3.2.3)                           
-##  rmarkdown    1.2     2016-11-21 CRAN (R 3.3.2)                           
-##  rmd2md       0.1.2   2016-10-23 Github (ivyleavedtoadflax/rmd2md@3fa6541)
-##  rprojroot    1.1     2016-10-29 CRAN (R 3.3.2)                           
-##  rsconnect    0.6     2016-11-21 CRAN (R 3.3.2)                           
-##  scales       0.4.1   2016-11-09 CRAN (R 3.3.2)                           
-##  stringi      1.1.2   2016-10-01 CRAN (R 3.2.3)                           
-##  stringr      1.1.0   2016-08-19 CRAN (R 3.2.3)                           
-##  tibble       1.2     2016-08-26 CRAN (R 3.2.3)                           
-##  withr        1.0.2   2016-06-20 CRAN (R 3.2.3)                           
-##  yaml         2.1.14  2016-11-12 CRAN (R 3.3.2)
+##  package      * version  date      
+##  AlgDesign      1.1-7.3  2014-10-15
+##  assertthat     0.1      2013-12-06
+##  car            2.1-4    2016-12-02
+##  caret        * 6.0-73   2016-11-10
+##  checkpoint     0.3.18   2016-10-31
+##  coda           0.18-1   2015-10-16
+##  codetools      0.2-15   2016-10-05
+##  colorspace     1.3-1    2016-11-18
+##  data.table     1.9.8    2016-11-25
+##  DBI            0.5-1    2016-09-10
+##  devtools       1.12.0   2016-06-24
+##  digest         0.6.10   2016-08-02
+##  dplyr        * 0.5.0    2016-06-24
+##  emoa           0.5-0    2012-09-25
+##  estimability   1.2      2016-11-19
+##  evaluate       0.10     2016-10-11
+##  foreach        1.4.3    2015-10-13
+##  GGally       * 1.3.0    2016-11-13
+##  ggplot2      * 2.2.0    2016-11-11
+##  ggthemes     * 3.3.0    2016-11-24
+##  govstyle     * 0.1.1    2016-12-17
+##  gtable         0.2.0    2016-02-26
+##  highr          0.6      2016-05-09
+##  iterators      1.0.8    2015-10-13
+##  knitr          1.15.1   2016-11-22
+##  labeling       0.3      2014-08-23
+##  lattice      * 0.20-34  2016-09-06
+##  lazyeval       0.2.0    2016-06-12
+##  lme4           1.1-12   2016-04-16
+##  lsmeans        2.25     2016-11-19
+##  magrittr     * 1.5      2014-11-22
+##  MASS           7.3-45   2015-11-10
+##  Matrix         1.2-7.1  2016-09-01
+##  MatrixModels   0.4-1    2015-08-22
+##  mco            1.0-15.1 2014-11-29
+##  memoise        1.0.0    2016-01-29
+##  mgcv           1.8-16   2016-11-07
+##  minqa          1.2.4    2014-10-09
+##  ModelMetrics   1.1.0    2016-08-26
+##  multcomp       1.4-6    2016-07-14
+##  munsell        0.4.3    2016-02-13
+##  mvtnorm        1.0-5    2016-02-02
+##  nlme           3.1-128  2016-05-10
+##  nloptr         1.0.4    2014-08-04
+##  nnet           7.3-12   2016-02-02
+##  pbkrtest       0.4-6    2016-01-27
+##  plyr           1.8.4    2016-06-08
+##  prettyunits    1.0.2    2015-07-13
+##  progress       1.1.2    2016-12-14
+##  purrr        * 0.2.2    2016-06-18
+##  quantreg       5.29     2016-09-04
+##  R6             2.2.0    2016-10-05
+##  randomForest   4.6-12   2015-10-07
+##  RColorBrewer   1.1-2    2014-12-07
+##  Rcpp           0.12.8   2016-11-17
+##  readr        * 1.0.0    2016-08-03
+##  reshape        0.8.6    2016-10-21
+##  reshape2       1.4.2    2016-10-22
+##  rgp          * 0.4-1    2014-08-08
+##  rmd2md       * 0.1.2    2016-10-23
+##  rpart          4.1-10   2015-06-29
+##  rsm            2.8      2016-10-16
+##  rstudioapi     0.6      2016-06-27
+##  sandwich       2.3-4    2015-09-24
+##  scales         0.4.1    2016-11-09
+##  SparseM        1.74     2016-11-10
+##  SPOT         * 1.1.0    2016-06-09
+##  stringi        1.1.2    2016-10-01
+##  stringr        1.1.0    2016-08-19
+##  survival       2.39-4   2016-05-11
+##  TH.data        1.0-7    2016-01-28
+##  tibble       * 1.2      2016-08-26
+##  tidyr        * 0.6.0    2016-08-12
+##  tidyverse    * 1.0.0    2016-09-09
+##  withr          1.0.2    2016-06-20
+##  xgboost      * 0.6-4    2017-01-05
+##  xtable         1.8-2    2016-02-05
+##  zoo            1.7-13   2016-05-03
+##  source                                    
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.1)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  Github (ukgovdatascience/govstyle@2ef672b)
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.1)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.5)                            
+##  CRAN (R 3.3.1)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.1)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.5)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  cran (@1.4.2)                             
+##  CRAN (R 3.3.2)                            
+##  Github (ivyleavedtoadflax/rmd2md@3fa6541) 
+##  CRAN (R 3.2.1)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.1)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)                            
+##  CRAN (R 3.2.3)                            
+##  CRAN (R 3.3.2)
 {% endhighlight %}
