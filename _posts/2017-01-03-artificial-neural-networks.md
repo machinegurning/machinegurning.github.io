@@ -3,7 +3,7 @@ title: "Newyearal Networks"
 author: matt_upson
 comments: yes
 date: '2017-01-03'
-modified: 2017-01-04
+modified: 2017-01-14
 layout: post
 excerpt: "Back to basics with Artificial Neural Networks"
 published: true
@@ -270,7 +270,7 @@ nn_predict(X, a, b)
  
 So far so good. 
 Now what about with the `mtcars` dataset.
-Note that on real data it is normal practice to normalise each variable to a mean of $0$ and a standard deviation of $1$; failing to do so can have a very negative effect on the training of the network.
+Note that on real data it is noral practice to normalise each variable to a mean of $0$ and a standard deviation of $1$; failing to do so can have a very negative effect on the training of the network.
  
 
 {% highlight r %}
@@ -304,38 +304,38 @@ nn_predict(X, a, b)
 
 {% highlight text %}
 ##                          pred
-## Mazda RX4           0.5081915
-## Mazda RX4 Wag       0.5108642
-## Datsun 710          0.4964582
-## Hornet 4 Drive      0.5558984
-## Hornet Sportabout   0.6119516
-## Valiant             0.5604326
-## Duster 360          0.6066331
-## Merc 240D           0.4928046
-## Merc 230            0.4909520
-## Merc 280            0.5102055
-## Merc 280C           0.5067553
-## Merc 450SE          0.6079788
-## Merc 450SL          0.6036579
-## Merc 450SLC         0.5996071
-## Cadillac Fleetwood  0.5997609
-## Lincoln Continental 0.6085943
-## Chrysler Imperial   0.6297462
-## Fiat 128            0.5176561
-## Honda Civic         0.5119202
-## Toyota Corolla      0.5165052
-## Toyota Corona       0.5050349
-## Dodge Challenger    0.5956881
-## AMC Javelin         0.5977754
-## Camaro Z28          0.6079742
-## Pontiac Firebird    0.6190061
-## Fiat X1-9           0.4997740
-## Porsche 914-2       0.5109609
-## Lotus Europa        0.5131413
-## Ford Pantera L      0.5380287
-## Ferrari Dino        0.5031797
-## Maserati Bora       0.5385301
-## Volvo 142E          0.4996109
+## Mazda RX4           0.4007562
+## Mazda RX4 Wag       0.3968762
+## Datsun 710          0.4338604
+## Hornet 4 Drive      0.5191740
+## Hornet Sportabout   0.4616576
+## Valiant             0.5197047
+## Duster 360          0.4460470
+## Merc 240D           0.4976472
+## Merc 230            0.4866810
+## Merc 280            0.5043584
+## Merc 280C           0.5067196
+## Merc 450SE          0.4405473
+## Merc 450SL          0.4515041
+## Merc 450SLC         0.4538436
+## Cadillac Fleetwood  0.4510035
+## Lincoln Continental 0.4393097
+## Chrysler Imperial   0.4237618
+## Fiat 128            0.4355282
+## Honda Civic         0.4448787
+## Toyota Corolla      0.4426178
+## Toyota Corona       0.4761914
+## Dodge Challenger    0.4715696
+## AMC Javelin         0.4643941
+## Camaro Z28          0.4218127
+## Pontiac Firebird    0.4594842
+## Fiat X1-9           0.4424601
+## Porsche 914-2       0.3826460
+## Lotus Europa        0.4591158
+## Ford Pantera L      0.3973150
+## Ferrari Dino        0.3992677
+## Maserati Bora       0.3943579
+## Volvo 142E          0.4209870
 {% endhighlight %}
  
 Great, so the 'feed-forward' part works - we are able to predict using the neural network. 
@@ -468,8 +468,9 @@ $$
 This rings true for the other non-linearities, like softmax, which I'll come back to in my next post.
  
 ## References
-
+ 
 Hastie, T., Tibshirani, R., and Friedman, J. (2009). *The Elements of Statistical Learning (Second Edition)*. Springer-Verlag. 763 pages. 
+ 
 
 {% highlight r %}
 devtools::session_info()
@@ -485,25 +486,42 @@ devtools::session_info()
 ##  language en_GB:en                    
 ##  collate  en_GB.UTF-8                 
 ##  tz       GB                          
-##  date     2017-01-04                  
+##  date     2017-01-14                  
 ## 
 ##  package    * version date       source                                   
+##  assertthat   0.1     2013-12-06 CRAN (R 3.2.3)                           
 ##  backports    1.0.4   2016-10-24 CRAN (R 3.3.2)                           
+##  checkpoint   0.3.18  2016-10-31 CRAN (R 3.3.2)                           
+##  colorspace   1.3-1   2016-11-18 CRAN (R 3.3.2)                           
+##  curl         2.3     2016-11-24 CRAN (R 3.3.2)                           
+##  DBI          0.5-1   2016-09-10 CRAN (R 3.2.3)                           
 ##  devtools     1.12.0  2016-06-24 CRAN (R 3.3.2)                           
 ##  digest       0.6.10  2016-08-02 CRAN (R 3.2.3)                           
+##  dplyr        0.5.0   2016-06-24 CRAN (R 3.2.3)                           
 ##  evaluate     0.10    2016-10-11 CRAN (R 3.3.2)                           
+##  ggplot2      2.2.0   2016-11-11 CRAN (R 3.3.2)                           
+##  git2r        0.16.0  2016-11-20 CRAN (R 3.3.2)                           
+##  gtable       0.2.0   2016-02-26 CRAN (R 3.2.3)                           
 ##  htmltools    0.3.5   2016-03-21 CRAN (R 3.2.3)                           
+##  httr         1.2.1   2016-07-03 CRAN (R 3.2.3)                           
+##  jsonlite     1.1     2016-09-14 CRAN (R 3.2.3)                           
 ##  knitr        1.15.1  2016-11-22 CRAN (R 3.3.2)                           
+##  lazyeval     0.2.0   2016-06-12 CRAN (R 3.3.2)                           
 ##  magrittr     1.5     2014-11-22 CRAN (R 3.2.3)                           
 ##  memoise      1.0.0   2016-01-29 CRAN (R 3.2.3)                           
+##  munsell      0.4.3   2016-02-13 CRAN (R 3.2.3)                           
+##  plyr         1.8.4   2016-06-08 CRAN (R 3.2.3)                           
+##  R6           2.2.0   2016-10-05 CRAN (R 3.2.3)                           
 ##  Rcpp         0.12.8  2016-11-17 CRAN (R 3.3.2)                           
+##  readr        1.0.0   2016-08-03 CRAN (R 3.2.3)                           
 ##  rmarkdown    1.2     2016-11-21 CRAN (R 3.3.2)                           
 ##  rmd2md       0.1.2   2016-10-23 Github (ivyleavedtoadflax/rmd2md@3fa6541)
 ##  rprojroot    1.1     2016-10-29 CRAN (R 3.3.2)                           
 ##  rsconnect    0.6     2016-11-21 CRAN (R 3.3.2)                           
-##  rstudioapi   0.6     2016-06-27 CRAN (R 3.2.3)                           
+##  scales       0.4.1   2016-11-09 CRAN (R 3.3.2)                           
 ##  stringi      1.1.2   2016-10-01 CRAN (R 3.2.3)                           
 ##  stringr      1.1.0   2016-08-19 CRAN (R 3.2.3)                           
+##  tibble       1.2     2016-08-26 CRAN (R 3.2.3)                           
 ##  withr        1.0.2   2016-06-20 CRAN (R 3.2.3)                           
 ##  yaml         2.1.14  2016-11-12 CRAN (R 3.3.2)
 {% endhighlight %}
