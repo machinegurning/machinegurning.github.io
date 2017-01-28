@@ -2,7 +2,7 @@
 title: "Dealing with dates"
 author: matt_upson
 comments: yes
-date: '2017-01-03'
+date: '2017-01-28'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Easy date aggregations"
