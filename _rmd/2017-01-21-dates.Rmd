@@ -7,7 +7,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Easy date aggregations"
 published: TRUE
-status: processed
+status: process
 tags:
 - dates
 - data science
@@ -256,14 +256,20 @@ Now we can get the plot we are after:
 
 p %+% 
   (sensor_data %>% 
-  dplyr::filter(
-    key == 'int_temp',
-    timestamp < '2015-12-01'
-    ) %>% 
-  mutate(
-    month = month(timestamp),
-    timestamp = get_time(timestamp)
-    ))
+     dplyr::filter(
+       key == 'int_temp',
+       timestamp < '2015-12-01'
+     ) %>% 
+     mutate(
+       month = month(timestamp),
+       timestamp = get_time(timestamp),
+       timestamp = ceiling_date(timestamp, '5 minutes')
+     ) %>%
+     group_by(month, timestamp) %>%
+     summarise(
+       value = median(value)
+     )
+  )
 
 ```
 
