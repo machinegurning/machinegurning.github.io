@@ -7,7 +7,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Easy date aggregations"
 published: TRUE
-status: process
+status: processed
 tags:
 - dates
 - data science
@@ -197,8 +197,15 @@ p <- sensor_data %>%
   dplyr::filter(
     key == 'int_temp',
     timestamp < '2015-12-01'
-    ) %>% 
-  mutate(month = month(timestamp)) %>%
+    ) %>%
+     mutate(
+       month = month(timestamp),
+       timestamp = ceiling_date(timestamp, '5 minutes')
+     )  %>%
+     group_by(month, timestamp) %>%
+     summarise(
+       value = median(value)
+     ) %>%
   ggplot + 
   aes(
     x = timestamp,
@@ -222,10 +229,8 @@ p <- sensor_data %>%
 p
 ```
 
-This doesn't give us what we want because there is still date information wrapped up within the timestamp, so we only get a timeseries of each value from each month.
-
-To get what we want is a little more tricky.
-There may well be a better way that I have not yet discovered, but this is what I have been doing so far.
+This doesn't give us what we want because there is still date information wrapped up within the timestamp, so we only get a timeseries of each value from each month. 
+To get what we want is a little more tricky, and there may well be a better way that I have not yet discovered, but this is what I have been doing so far.
 
 First we need to extract the time from the timestamp without date information.
 
@@ -254,27 +259,45 @@ Now we can get the plot we are after:
 
 ```{r 2017-01-21_daily_average_2}
 
-p %+% 
-  (sensor_data %>% 
-     dplyr::filter(
-       key == 'int_temp',
-       timestamp < '2015-12-01'
-     ) %>% 
+p <- sensor_data %>% 
+  dplyr::filter(
+    key == 'int_temp',
+    timestamp < '2015-12-01'
+    ) %>%
      mutate(
        month = month(timestamp),
        timestamp = get_time(timestamp),
        timestamp = ceiling_date(timestamp, '5 minutes')
-     ) %>%
+     )  %>%
      group_by(month, timestamp) %>%
      summarise(
        value = median(value)
-     )
-  )
+     ) %>%
+  ggplot + 
+  aes(
+    x = timestamp,
+    y = value
+  ) + 
+  geom_line(
+    colour = gov_cols[['purple']]
+    ) +
+  facet_wrap(
+    ~month,
+    ncol = 2
+    ) + 
+  scale_x_datetime(
+    date_labels = '%H:%M'
+  ) +
+  geom_smooth(
+    col = 'red',
+    size = 0.5) +
+  theme_gov()
+
+p
 
 ```
 
-If anyone knows a better way of doing this, I would love to know, but it works for now.
-
+If anyone knows a better way of doing this, I would love to know, but this works for now.
 
 ```{r}
 devtools::session_info()
