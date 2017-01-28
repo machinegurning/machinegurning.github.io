@@ -3,4 +3,4 @@
 
 # MachineGurning.com
 
-MachineGurning.com is a blog about statistics, data science, and amachine learning, based on the minimal mistakes theme.
+MachineGurning.com is a blog about statistics, data science, and machine learning, based on the minimal mistakes theme.
