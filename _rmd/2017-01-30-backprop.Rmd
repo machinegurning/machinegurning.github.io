@@ -1,11 +1,11 @@
 ---
-title: "Backprop"
+title: "Back-propagating"
 author: matt_upson
 comments: yes
 date: '2017-01-30'
 modified: #`r format(Sys.time(), '%Y-%m-%d')`
 layout: post
-excerpt: "The hard part of neural networks"
+excerpt: "The harder part of neural networks"
 published: TRUE
 status: processed
 tags:
@@ -19,7 +19,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-#checkpoint::setSnapshot('2016-12-20')
 
 knitr::opts_chunk$set(
   echo = TRUE,
@@ -34,6 +33,62 @@ knitr::opts_chunk$set(
 ```
 
 
+Hastie et al. define the equations in the following way:
+
+$$
+\{\alpha_{0m},\alpha_m; m=1,2,\cdots,M\}\,M(p+1)\,\text{weights}\\
+\{\beta_{0k},\beta_k; k=1,2,\cdots,K\}\,K(M +1)\,\text{weights}
+$$
+
+sum of squared error:
+
+$$
+R(\theta) = \sum^K_{k=1}\sum^N_{i=1}(y_{ik}-f_k(x_i))^2)
+$$
+
+cross-entropy (deviance)
+
+$$
+R(\theta) = \sum^N_{i=1}\sum^K_{k=1}y_{ik}\log f_k(x_i)
+$$
+
+$$
+\begin{align*}
+R(\theta) &= \sum^N_{i=1}R_i \\
+          &= \sum^N_{i=1}\sum^K_{k=1}(y_{ik}-f_k(x_i))^2
+\end{align*}
+
+$$
+
+derivatives
+
+$$
+\begin{align*}
+\frac{\partial R_i}{\partial\beta_{km}} &= -2(y_{ik}-f_k(x_i))g'_k(\beta^T_kz_i)z_{mi}\\
+\frac{\partial R_i}{\partial\alpha_{m\ell}} &= -\sum^K_{k=1}2(y_{ik}-f_k(x_i))g'_k(\beta^T_kz_i)\beta_{km}\sigma'(\alpha^T_mx_i)x_{i\ell}
+\end{align*}
+$$
+
+gradient descent update
+
+$$
+\begin{align*}
+\beta^{r+1}_{km} &= \beta^{(r)}_{km}-\gamma r\sum^N_{i=1}\frac{\partial R_i}{\partial\beta^{(r)}_{km}} \\
+\alpha^{r+1}_{m\ell} &= \alpha^{(r)}_{m\ell}-\gamma r\sum^N_{i=1}\frac{\partial R_i}{\partial\alpha^{(r)}_{m\ell}} \\
+\end{align*}
+$$
+where $\gamma$ is the learning rate
+
+$$
+\begin{align*}
+\frac{\partial R_i}{\partial \beta_{km}} &= \delta_{ki}z_{mi} \\
+\frac{\partial R_i}{\partial\alpha_{m\ell}} &= s_{mi}x_{i\ell}
+\end{align*}
+$$
+
+$$
+s_{mi} = \sigma'(\alpha^T_mx_i)\sum^K_{k=1}\beta_{km}\delta_{ki}
+$$
 
 
 ```{r}
