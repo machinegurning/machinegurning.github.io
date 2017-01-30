@@ -1,0 +1,41 @@
+---
+title: "Backprop"
+author: matt_upson
+comments: yes
+date: '2017-01-30'
+modified: #`r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "The hard part of neural networks"
+published: TRUE
+status: processed
+tags:
+- machine learning
+- artificial neural networks
+- neural network
+- data science
+- R
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#checkpoint::setSnapshot('2016-12-20')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = TRUE,
+  fig.height = 9, 
+  fig.width = 6
+  )
+```
+
+
+
+
+```{r}
+devtools::session_info()
+```
