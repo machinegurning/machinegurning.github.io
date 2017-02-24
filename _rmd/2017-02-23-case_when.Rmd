@@ -5,7 +5,7 @@ comments: yes
 date: '2017-02-23'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
-excerpt: "How to vectorise multiple if and else if statements"
+excerpt: "How to tidy up multiple if and else if statements"
 published: TRUE
 status: processed
 tags:
@@ -37,21 +37,28 @@ library(tidyverse)
 
 x <- 1:50  #  a numeric vector from one to fifty
   
-if_else(x %% 35 == 0, "fizz buzz", #  divisible by 35 with no remainder
-        if_else(x %% 5 == 0, "fizz",
-                if_else(x %% 7 == 0, "buzz",
-                        "flat"
-                        )
-                )
-        ) %>%
-  table(dnn = "fizzybuzzyness") %>%  #  give the vector of character strings a nice name
-  as_tibble(x = ., n = "how_many") %>%  #  give the frequency a nice name
-  ggplot(., aes(fizzybuzzyness, how_many)) +  #  the . means "the output piped from the previous step"
-  geom_bar(stat = "identity") +  #  strings are sorted "alphabetically"
+#  divisible by 35 with no remainder
+
+if_else(
+  x %% 35 == 0, "fizz buzz", 
+  if_else(x %% 5 == 0, "fizz",
+          if_else(x %% 7 == 0, "buzz",
+                  "flat"
+          )
+  )
+) %>%
+  #  give the vector of character strings a nice name
+  table(dnn = "fizzybuzzyness") %>%  
+  #  give the frequency a nice name
+  as_tibble(x = ., n = "how_many") %>%  
+  #  the . means "the output piped from the previous step"
+  ggplot(., aes(fizzybuzzyness, how_many)) +  
+  #  strings are sorted "alphabetically"
+  geom_bar(stat = "identity") +  
   govstyle::theme_gov() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  
-       
+
+
 ```
 
 There must be a better way? A quick Google got me [here](https://edwinth.github.io/blog/ifelse-wrapper/). A neat idea, but I noticed the suggestion of the new-ish `dplyr::case_when` function in the comments section of this excellent blog post. I've taken up the baton, by exploring this function in this post.  
@@ -64,17 +71,25 @@ The example from the `?case_when` is quite informative; I give a visual interpre
 x <- 1:50  #  a numeric vector from one to fifty
 
 case_when(
-  x %% 35 == 0 ~ "fizz buzz",  #  if divisible by 35 make "fizz buzz" else
-  x %% 5 == 0 ~ "fizz",  #  if divisible by 5 make "fizz", unless already "fizz buzz" else
-  x %% 7 == 0 ~ "buzz",  #  if divisible by 7 make "buzz" unless already "fizz buzz" or "fizz"
-  TRUE ~ "flat"  #  anything else convert into flat
+  #  if divisible by 35 make "fizz buzz" else
+  x %% 35 == 0 ~ "fizz buzz",  
+  #  if divisible by 5 make "fizz", unless already "fizz buzz" else
+  x %% 5 == 0 ~ "fizz",  
+  #  if divisible by 7 make "buzz" unless already "fizz buzz" or "fizz"
+  x %% 7 == 0 ~ "buzz",  
+  #  anything else convert into flat
+  TRUE ~ "flat"  
 ) %>%
-  table(dnn = "fizzybuzzyness") %>%  #  give the vector of character strings a nice name
-  as_tibble(x = ., n = "how_many") %>%  #  give the frequency a nice name, default is n
-  ggplot(., aes(fizzybuzzyness, how_many)) +  #  the . means "the output piped from the previous step"
+   #  give the vector of character strings a nice name
+  table(dnn = "fizzybuzzyness") %>% 
+  #  give the frequency a nice name, default is n
+  as_tibble(x = ., n = "how_many") %>%  
+  #  the . means "the output piped from the previous step"
+  ggplot(., aes(fizzybuzzyness, how_many)) +  
   geom_bar(stat = "identity") +  
   govstyle::theme_gov() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
 ```
 
 The same outcome but which did you find the more readable? (Imagine you were quality assuring this code?)  
@@ -85,15 +100,25 @@ As pointed out in the `case_when` help examples, ordering is important where you
 
 ```{r }
 mtcars %>%
-  tibble::rownames_to_column("thecar") %>%  #  convert row names to an explicit column
-  mutate(brand = case_when(.$thecar == "Mazda RX4" | .$thecar == "Mazda RX4 Wag"  ~ "Mazda",  #  You should start with the most specific...
-                           .$thecar == "Mazda RX4 Wag" ~ "Mazda Wagon",  #  Otherwise this happens; note how ordering is important!
-                           .$thecar == "Maserati Bora" & .$hp > 300 ~ "Wow!",  #  and / or, logical tests
-                            TRUE ~ "Not Mazda")  #  everything else
-          ) %>%
+  #  convert row names to an explicit column
+  tibble::rownames_to_column("thecar") %>%  
+  
+  
+  
+  #  You should start with the most specific, as ordering is important, and you
+  #  can also use logical tests e.g. > <
+                           
+  mutate(
+    brand = case_when(
+      .$thecar == "Mazda RX4" | .$thecar == "Mazda RX4 Wag"  ~ "Mazda",
+      .$thecar == "Mazda RX4 Wag" ~ "Mazda Wagon", 
+      .$thecar == "Maserati Bora" & .$hp > 300 ~ "Wow!", 
+      TRUE ~ "Not Mazda"
+      )  
+  ) %>%
   select(brand) %>%
   table()
-  
+
 ```
 
 `case_when` is still [somewhat new and experimental](https://blog.rstudio.org/2016/06/27/dplyr-0-5-0/). For now I may stick with nested `if_else` statements until this is more stable and works well within mutate despite `case_when` being a bit easier to read. If you play around with this demo code it's quite easy to break, this may be in part to some useful non-standard evaluation intrinsic to `mutate`. For example replacing the `&` with `&&` causes it to error. Try it with your own data and keep your eyes peeled for further developments! In [Hadley](https://github.com/hadley) we trust.
