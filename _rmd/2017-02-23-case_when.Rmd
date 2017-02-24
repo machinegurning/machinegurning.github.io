@@ -1,25 +1,18 @@
 ---
-title: "Just in case"
+title: "It's if_else statements all the way down..."
 author: matt_gregory
-date: "23 February 2017"
+comments: yes
+date: '2017-02-23'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "How to vectorise multiple if and else if statements"
+published: TRUE
+status: processed
+tags:
+- case when
+categories: Rstats
 output: html_document
 ---
-
-<!-- --- -->
-<!-- title: "It's if_else statements all the way down..." -->
-<!-- author: matt_gregory -->
-<!-- comments: yes -->
-<!-- date: '2017-02-23' -->
-<!-- modified: `r format(Sys.time(), '%Y-%m-%d')` -->
-<!-- layout: post -->
-<!-- excerpt: "How to vectorise multiple if and else if statements." -->
-<!-- published: FALSE -->
-<!-- status: processed -->
-<!-- tags: -->
-<!-- - case when -->
-<!-- categories: Rstats -->
-<!-- output: html_document -->
-<!-- --- -->
 
 ```{r setup, include=FALSE}
 checkpoint::setSnapshot('2016-12-22')
