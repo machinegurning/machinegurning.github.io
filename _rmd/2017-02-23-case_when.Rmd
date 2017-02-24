@@ -1,0 +1,132 @@
+---
+title: "It's if_else statements all the way down..."
+author: matt_gregory
+comments: yes
+date: '2017-02-23'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "How to tidy up multiple if and else if statements"
+published: TRUE
+status: processed
+tags:
+- case when
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+checkpoint::setSnapshot('2016-12-22')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+I've been [developing](http://r-pkgs.had.co.nz/) a [package](https://github.com/mammykins) where I needed a function to take numerous different actions (different [mutations]()) depending on the values of different variables within each row of a dataframe. I started off by using a series of nested `dplyr::if_else` functions inside of a `dplyr::mutate` call. I ended up with a bit of a mess, perhaps a dozen or so `if_else` calls... that's when I got some abuse from my colleague following a Github pull request.
+
+### Vector example
+
+```{r 2017-02-23-barplot-fizz_if_else}
+library(tidyverse)
+
+x <- 1:50  #  a numeric vector from one to fifty
+  
+#  divisible by 35 with no remainder
+
+if_else(
+  x %% 35 == 0, "fizz buzz", 
+  if_else(x %% 5 == 0, "fizz",
+          if_else(x %% 7 == 0, "buzz",
+                  "flat"
+          )
+  )
+) %>%
+  #  give the vector of character strings a nice name
+  table(dnn = "fizzybuzzyness") %>%  
+  #  give the frequency a nice name
+  as_tibble(x = ., n = "how_many") %>%  
+  #  the . means "the output piped from the previous step"
+  ggplot(., aes(fizzybuzzyness, how_many)) +  
+  #  strings are sorted "alphabetically"
+  geom_bar(stat = "identity") +  
+  govstyle::theme_gov() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+There must be a better way? A quick Google got me [here](https://edwinth.github.io/blog/ifelse-wrapper/). A neat idea, but I noticed the suggestion of the new-ish `dplyr::case_when` function in the comments section of this excellent blog post. I've taken up the baton, by exploring this function in this post.  
+
+The example from the `?case_when` is quite informative; I give a visual interpretation (see the code comments for details). However, we should explore it further and apply it to a dataframe to expand our understanding.
+
+```{r 2017-02-23-barplot-fizz_case_when}
+# ?case_when
+
+x <- 1:50  #  a numeric vector from one to fifty
+
+case_when(
+  #  if divisible by 35 make "fizz buzz" else
+  x %% 35 == 0 ~ "fizz buzz",  
+  #  if divisible by 5 make "fizz", unless already "fizz buzz" else
+  x %% 5 == 0 ~ "fizz",  
+  #  if divisible by 7 make "buzz" unless already "fizz buzz" or "fizz"
+  x %% 7 == 0 ~ "buzz",  
+  #  anything else convert into flat
+  TRUE ~ "flat"  
+) %>%
+   #  give the vector of character strings a nice name
+  table(dnn = "fizzybuzzyness") %>% 
+  #  give the frequency a nice name, default is n
+  as_tibble(x = ., n = "how_many") %>%  
+  #  the . means "the output piped from the previous step"
+  ggplot(., aes(fizzybuzzyness, how_many)) +  
+  geom_bar(stat = "identity") +  
+  govstyle::theme_gov() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+The same outcome but which did you find the more readable? (Imagine you were quality assuring this code?)  
+
+### Dataframes example
+
+As pointed out in the `case_when` help examples, ordering is important where you want to go from most specific to least specific. In the example below we wanted the `Mazda RX4 Wag` to be labbelled as a `Mazda Wagon` in the newly created `brand` variable. This failed due to our ordering; to suceed we should move this before the left hand side (LHS) first argument. Notice how the right hand side of the `~` provides the replacement value. Try replacing the `"Wow"` with a numeric 50, what happens when you run the code?
+
+```{r }
+mtcars %>%
+  #  convert row names to an explicit column
+  tibble::rownames_to_column("thecar") %>%  
+  
+  
+  
+  #  You should start with the most specific, as ordering is important, and you
+  #  can also use logical tests e.g. > <
+                           
+  mutate(
+    brand = case_when(
+      .$thecar == "Mazda RX4" | .$thecar == "Mazda RX4 Wag"  ~ "Mazda",
+      .$thecar == "Mazda RX4 Wag" ~ "Mazda Wagon", 
+      .$thecar == "Maserati Bora" & .$hp > 300 ~ "Wow!", 
+      TRUE ~ "Not Mazda"
+      )  
+  ) %>%
+  select(brand) %>%
+  table()
+
+```
+
+`case_when` is still [somewhat new and experimental](https://blog.rstudio.org/2016/06/27/dplyr-0-5-0/). For now I may stick with nested `if_else` statements until this is more stable and works well within mutate despite `case_when` being a bit easier to read. If you play around with this demo code it's quite easy to break, this may be in part to some useful non-standard evaluation intrinsic to `mutate`. For example replacing the `&` with `&&` causes it to error. Try it with your own data and keep your eyes peeled for further developments! In [Hadley](https://github.com/hadley) we trust.
+
+## Conclusion
+
+A relatively new offering from the `tidyverse` on making nested `if_else` statements more readible.  
+
+```{r}
+devtools::session_info()
+```
