@@ -36,9 +36,10 @@ It demonstrates how [cherry picking](https://en.wikipedia.org/wiki/Cherry_pickin
  
 Give it a try: [App-cherry_picker](https://mammykins.shinyapps.io/App-cherry_picker/).  
  
-## Clone the [code](https://github.com/mammykins/App-cherry_picker)
+## Clone the code
+
  
-The code looks complicated right? Shiny can be tricky as it can be more difficult to debug than regular R. However, it's not so bad, the code is developed iteratively, it's not written in one session. Make sure you know what the end [user wants](https://en.wikipedia.org/wiki/Usability_testing) and show it to them frequently for feedback. Gradually your app 'll evolve to meet the needs of the user. The interactivity is worth the extra effort and there are plenty of [good tutorials](https://shiny.rstudio.com/tutorial/) available!  
+The [code](https://github.com/mammykins/App-cherry_picker) looks complicated right? Shiny can be tricky as it can be more difficult to debug than regular R. However, it's not so bad, the code is developed iteratively, it's not written in one session. Make sure you know what the end [user wants](https://en.wikipedia.org/wiki/Usability_testing) and show it to them frequently for feedback. Gradually your app 'll evolve to meet the needs of the user. The interactivity is worth the extra effort and there are plenty of [good tutorials](https://shiny.rstudio.com/tutorial/) available!  
  
 I started this app development by going to the Shiny gallery and copying code from an [app](https://shiny.rstudio.com/tutorial/) which looked similar to the desired app I had in mind. You can do the same by copying my code as a starting point.    
  
