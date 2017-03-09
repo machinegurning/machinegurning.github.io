@@ -80,7 +80,7 @@ Along with including the bias nodes in the vectors $X$ and $Z$, this simplificat
 $$
 \begin{array}{ll}  
 Z_m = \sigma(\alpha_m^TX),\:\text{for}\:m=\{1, \ldots, M\} \\
-y = \sigma(\beta_k^TX),\:\text{for}\:k=\{1, \ldots, K\}
+y = \sigma(\beta_k^TZ),\:\text{for}\:k=\{1, \ldots, K\}
 \end{array}
 $$
  
