@@ -39,6 +39,152 @@ This blog post draws heavily on Chapter 10 in the excellent [Practical Data Scie
 
 To understand the different layers of a [full-stack](https://www.quora.com/What-does-the-term-full-stack-programmer-mean) development it can be useful to produce a reference deployment of your model. This can be a good way to jump-start deployment as it can allow experienced engineers (who are better suited to true production deployment) to tinker and experiment with your work, test [corner cases](https://en.wikipedia.org/wiki/Corner_case) and build [acceptance tests](https://en.wikipedia.org/wiki/Acceptance_testing).  
 
-We'll work through using the [Student Performance dataset](https://archive.ics.uci.edu/ml/datasets/Student+Performance) that we have seen a few times on this [blog](http://www.machinegurning.com/rstats/student-performance/). We are interested in predicting whether students are likely to pass or fail their end of year exam (`G3` variable above a made-up threshold of 10). Again we use the Maths results only.  
+We'll work through using the [Student Performance dataset](https://archive.ics.uci.edu/ml/datasets/Student+Performance) that we have seen a few times on this [blog](http://www.machinegurning.com/rstats/student-performance/). We are interested in predicting whether students are likely to pass or fail their end of year exam (`G3` variable above a made-up threshold of 10). Again we use the Maths results only reading off the web from our [Github data repo](https://github.com/machinegurning/machinegurning.github.io/tree/master/data).  
+
+```{r}
+library(tidyverse)
+
+d <- readr::read_delim("https://raw.githubusercontent.com/machinegurning/machinegurning.github.io/master/data/2016-03-01_student_performance.csv", delim = ";")
+
+d$outcome <- NULL
+ 
+d$outcome <- factor(
+  ifelse(d$G3 >= 10, 1, 0), 
+  labels = c("fail", "pass")
+  )
+
+d <- select(d, -G3)
+```
+
+To help with the wrangling and tidying of data, I have developed a series of [data stories on Github](https://github.com/mammykins/data_stories) which provide some standard useful code for preparing and exploring data. We employ some of that here. Given our history with this data we don't go into detail. See if you can follow the code. 
+
+```{r}
+#  names(d)
+#  inspect data, any need normalising? or logicising or 
+to_normalise <- names(select(d, age, Medu:Fedu, traveltime:failures,
+                             famrel:G2))
+factorise  <- names(select(d,
+                           school, sex, address:Pstatus,
+                           Mjob:guardian, schoolsup:romantic,
+                           outcome))
+logicise <- c()
+
+library(scales)  #  rescale handles NAs, there are no NAs in this data
+#  nrow(d) - sum(complete.cases(d))
+
+d_norm <- d %>%
+  na.omit() %>%
+  mutate_each_(funs(rescale), to_normalise) %>%
+  mutate_each_(funs(as.factor), factorise)
+
+glimpse(d_norm)
+```
+
+## Training and test datasets.
+
+We need to split the data so we can build the model and then test it, to see if it generalises well. This gives us confidence in the external validity of the model. The data arrived in a random order thus we don't need to worry about sampling at random.  
+
+```{r}
+
+data_train <- d_norm[1:350, ]
+data_test <- d_norm[351:395, ]  #  we normalised with our data sets merged, unrealistic
+
+```
+
+## Building the model
+
+Prior to building the model we prepare some model evaluation tools to report the model quality. As a reminder the random forest approach is useful as it tries to de-correlate the trees of which it is ensembled by randomising the set of variables that each tree is allowed to use. It also initiates by drawing a bootstrapped sample from the training data.  
+
+```{r}
+# these were defined in Chapter 9 of Practical Data Science with R
+loglikelihood <- function(y, py) {
+  pysmooth <- ifelse(py == 0, 1e-12,
+                     ifelse(py == 1, 1 - 1e-12, py))
+  sum(y * log(pysmooth) + (1 - y)*log(1 - pysmooth))
+}
+accuracyMeasures <- function(pred, truth, threshold=0.5, name="model") {
+  dev.norm <- -2*loglikelihood(as.numeric(truth), pred)/length(pred)
+  ctable = table(truth = truth,
+                 pred = pred)
+  accuracy <- sum(diag(ctable))/sum(ctable)
+  precision <- ctable[2,2]/sum(ctable[,2])
+  recall <- ctable[2,2]/sum(ctable[2,])
+  f1 <- precision*recall
+  print(paste("precision=", precision, "; recall=" , recall))
+  print(ctable)
+  data.frame(model = name, accuracy = accuracy, f1 = f1, dev.norm)
+}
+```
+
+
+We train a simple random forest classifier.
+
+```{r}
+library(randomForest)
+#  make a list of avaialble variables if necessary
+varslist <- names(select(d_norm, -outcome))
+customFormula <- paste('outcome ~ ', paste(varslist, collapse = ' + '))
+
+fmodel <- randomForest(as.formula(customFormula),
+                      data = data_train,
+                      importance = T)
+
+```
+
+
+```{r}
+print('training')
+rtrain <- data.frame(truth = data_train$outcome, pred = predict(fmodel, newdata = data_train))
+print(accuracyMeasures(rtrain$pred, rtrain$truth))
+
+# ggplot(rtrain, aes(x=pred, color=(truth==1),linetype=(truth==1))) + 
+#    geom_density(adjust=0.1)
+```
+
+
+```{r}
+print('testing')
+rtest <- data.frame(truth = data_test$outcome, pred = predict(fmodel, newdata = data_test))
+print(accuracyMeasures(rtest$pred, rtest$truth))
+
+# ggplot(rtest, aes(x=pred, color=(truth==1),linetype=(truth==1))) + 
+#    geom_density(adjust=0.1)
+```
+
+Notice the negligible fall-off from training to test performance, the default random forest provided an OK fit. However, we are more interested in the export of the model, so we move on to that now. If interested run this code to examine variable importance (try to guess what variables are probably the most useful for predicting end of year exam performance?).   
+
+```{r eval = FALSE}
+varImpPlot(fmodel, type = 1)
+```
+
+## Deploying models by export
+
+Training the model is the hard part, lets export our finished model for use by other systems. When exporting the model we let our development partners deal with the difficult parts of development for production. We chose the `randomForest` function as the help suggests that the underlying trees are accessible using the `getTree` function. Our Forest is big but simple.
+
+### Save the workspace
+
+Training the model and exporting it are likely to happen at different times. We can save the workspace that includes the random forest model and load it along with the `randomForest` library prior to export at a later date if required.
+
+```{r}
+fname <- "rf_student_performance.Rdata"
+fname_with_path <- "./data/rf_student_performance.Rdata"
+
+if (!file.exists(fname_with_path)) {
+   save(list = ls(), file = fname)
+   message(paste('saved', fname))  # message to running R console
+   print(paste('saved', fname))    # print to document
+} else {
+   message(paste('skipped saving', fname)) # message to running R console
+   print(paste('skipped saving', fname))   # print to document
+}
+```
+
+A random forest model is a collection of decision trees. A decision tree is a series of tests traditionallly visualised as a diagram of decision nodes. With the random forest saved as an object we can define a function that joins the tree tables from the random forest `getTree` method into one large table of trees. This can then be exported as a table representation of the random forest model that can be used by developers.
+
+```{r}
+
+```
+
+
 
 
