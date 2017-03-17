@@ -61,15 +61,3 @@ Here we have one of the tabs that you can navigate to. This `tabPanel` is one of
  
 Note the use of HTML builder functions (e.g. `p()` and `h4()`) for constructing HTML documents (the output is an intereactive webpage).
  
-
-{% highlight r %}
-tabPanel("Fruit limit",
-         h4("Schools selected from Data explorer tab"),
-         DT::dataTableOutput("green_grocers"),
-         plotOutput("scatter_fruit", height = 200),
-         h4("How many items of fruit required to feed the Schools of interest?"),
-         p("This app was developed to showcase a Shiny app in R using the Leaflet package. Use your imagination, make a map!",
-           style = "font-family: 'times'; font-si16pt")
-         )
-{% endhighlight %}
- 
