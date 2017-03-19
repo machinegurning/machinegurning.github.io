@@ -125,6 +125,8 @@ library(randomForest)
 varslist <- names(select(d_norm, -outcome))
 customFormula <- paste('outcome ~ ', paste(varslist, collapse = ' + '))
 
+
+set.seed(1337)
 fmodel <- randomForest(as.formula(customFormula),
                       data = data_train,
                       importance = T)
@@ -163,7 +165,7 @@ Training the model is the hard part, lets export our finished model for use by o
 
 ### Save the workspace
 
-Training the model and exporting it are likely to happen at different times. We can save the workspace that includes the random forest model and load it along with the `randomForest` library prior to export at a later date if required.
+Training the model and exporting it are likely to happen at different times. We can save the workspace that includes the random forest model and load it along with the `randomForest` library prior to export at a later date if required. We show how to save the workspace below, or you could save the `randomForest` object using the `saveRDS` function.
 
 ```{r}
 fname <- "rf_student_performance.Rdata"
@@ -179,11 +181,165 @@ if (!file.exists(fname_with_path)) {
 }
 ```
 
-A random forest model is a collection of decision trees. A decision tree is a series of tests traditionallly visualised as a diagram of decision nodes. With the random forest saved as an object we can define a function that joins the tree tables from the random forest `getTree` method into one large table of trees. This can then be exported as a table representation of the random forest model that can be used by developers.
+A [random forest](https://en.wikipedia.org/wiki/Random_forest) model is a collection of decision trees. A decision tree is a series of tests traditionallly visualised as a diagram of decision nodes. With the random forest saved as an object we can define a function that joins the tree tables from the random forest `getTree` method into one large table of trees. This can then be exported as a table representation of the random forest model that can be used by developers.
+
+We look at the first decision tree from our random forest model, `fmodel`. We can also count the number of rows in the decision table.
 
 ```{r}
+nrow(getTree(fmodel, k = 1, labelVar = FALSE))
+```
+
+And see the output as a matrix. We could export like this if we want to avoid characters.
+
+```{r}
+getTree(fmodel, k = 1, labelVar = FALSE) %>%
+  head(10)
+```
+
+## Interpreting the decision tree as a table
+
+Read the help using `?getTree`. We set the argument for `labelVar=TRUE` below to provide better human readable labels for our splitting variables and predicted class providing the output as a dataframe.  
+
+```{r}
+getTree(fmodel, k = 1, labelVar = TRUE) %>%
+  head(30)
+```
+
+### Worked example
+
+We demonstrate the interpretation using an example. Imagine you had a test case for the student Joe Bloggs; a non-romantic student, who has failed three times before and with first term (G1) scaled attainment score of 0.22. Joe has promised he has turned over a new leaf since hearing about the use of machine learning in his school!    
+
+We start at the first row and will proceed until we have a prediction for our student at a terminal node (a row with the `status` variable as `-1` and `left daughter` and `right daughter` variables as zero; e.g. rows 6, 9 and 10 are terminal nodes). 
+
+* Start at row one and ask has your student failed the exam fewer times than the split point?
+
+For numerical predictors, data with values of the variable less than or equal to the splitting point go to the left daughter node. Our student failed three times and this is greater than the `split point`. However, we must be careful and remember to transform our inputs in the same way we did for training our model, we could do this by getting the percentile our student's number of failures is in and reminding ourselves of the distribution of the `failures` variable (during production this would be auotmated, we show it here for understanding).
+
+```{r}
+table(d$failures)  #  all the data
+table(data_train$failures)  # just training, normalised / scaled
+
 
 ```
+
+Three failures is the maximum seen and was therefore scaled to one. One is greater than the `split point` therefore we proceed to the `right daughter` row of the decision table (row 3). 
+
+* At row 3 we ask Joe Bloggs whether his `G1` scaled score was less than 0.28?
+
+Joe scored 0.22 which is less than 0.28, thus we proceed to the `left daugther`.
+
+* At row 6 we notice zeroes and `NA`, we also notice a `status` of `-1`. We are at a terminal node! A decision has been made, Joe Bloggs will `fail`!
+
+#### Always make sure your inputs in production are bounded
+
+What would happen if a student failed four times? Would the production model predictions be able to cope? Developers can help you to defend against such problems. This is one issue of exporting a model, you have to produce a specification of the data treatment.   
+
+#### Always make sure your predictions in production are bounded
+
+For a classification problem, your predictions are automatically bounded between 0 and 1. If this were a regressuib we would want to limit the predictions to be between the `min` and `max`
+ observed in the training set.
+According to the help, for categorical predictors, the splitting point is represented by an integer, whose binary expansion gives the identities of the categories that goes to left or right. 
+
+### How do I convert this into a percentage?
+
+You can think of each decision tree in your forest as being one expert which has a slightly different life experience. It's seen different students and might have prioritised some variables over others (sort-of). If each expert votes `pass` or `fail` then you can produce a percentage or probability of each `outcome` for each new student.
+
+### Seeing the forest of the trees
+
+So your developer partners would need access to all the decision trees in a table to then build tools to read the model trees and eavluate the trees on new data. We simply need to define a function that joins the tree tables from the random forest `getTree()` method into one large table of trees. We write the table as a tab-separated values table (or whatever is easy for the developers software to read).  
+
+```{r}
+extract_trees <- function(rfModel) {
+  ei <- function(i) {
+    ti <- getTree(rfModel, k = i, labelVar = TRUE)
+    ti$nodeid <- 1:dim(ti)[[1]]
+    ti$treeid <- i
+    ti
+  }
+  nTrees <- rfModel$ntree
+  do.call("rbind", sapply(1:nTrees, ei, simplify = FALSE))
+}
+
+#  write_tsv is tidyverse, ergo no row numbers, however the nodeid variable covers this
+readr::write_tsv(extract_trees(fmodel),
+            path = "../data/2017-03-17-rf_export.txt")  
+
+```
+
+Open the raw text file we produced and inspect it. You should see 500 trees of varying thickness (number of nodes). Delve into the tenebrious forest to discover insight and excellent prediction accuracy.  
+
+## Export summary
+
+You should be comfortable exporting a random forest model to others allowing model evaluation to be reimplemented in a production environment.
+
+# Deploying models as R HTTP services
+
+An alternative, that is also quite easy to set-up, is to expose the R model as an HTTP service. We copy the code and modify to our specific example from this [Github](https://github.com/mammykins/zmPDSwR/tree/master/Buzz) example. See the comments for guidance and for a more detailed tutorial see this older [blog post](https://www.r-bloggers.com/a-simple-web-application-using-rook/).
+
+```{r}
+library(Rook)
+
+varslist <- names(data_train)
+numericPositions <- sapply(data_train[, varslist], is.numeric)  #  which variables are numeric?
+
+#  declare the modelling service
+modelFn <- function(env) {
+  errors <- c()
+  warnings <- c()
+  val <- c()
+  row <- c()
+  
+  tryCatch(
+    {
+      # this block does the actual work by parsing the data
+      # and applying the model
+      arg <- Multipart$parse(env)
+      row <- as.list(arg[varslist])
+      names(row) <- varslist
+      row[numericPositions] <- as.numeric(row[numericPositions])
+      frame <- data.frame(row)
+      val <- predict(fmodel, newdata = frame)
+      },
+    warning = function(w) { message(w)
+      warnings <<- c(warnings,as.character(w)) },
+    error = function(e) { message(e)
+      errors <<- c(errors,as.character(e)) }
+)
+#  format the results and place into a list to be returned
+  body <- paste(
+    'val=',val,'\n',
+    'nerrors=',length(errors),'\n',
+    'nwarnings=',length(warnings),'\n',
+    'query=',env$QUERY_STRING,'\n',
+    'errors=',paste(errors,collapse = ' '),'\n',
+    'warnings=',paste(warnings,collapse = ' '),'\n',
+    'data row','\n',
+    paste(capture.output(print(row)),collapse = '\n'),'\n',
+    sep = '')
+  list(
+    status = ifelse(length(errors) <= 0, 200L, 400L),
+    headers = list('Content-Type' = 'text/text'),
+    body = body )  
+}
+```
+
+We start a new Rook HTTP service and start the HTTP server.
+
+```{r}
+s <- Rhttpd$new()
+s$add(name = "modelFn", app = modelFn)
+s$start()
+print(s)
+```
+
+
+```{r}
+sessionInfo()
+```
+
+
+
+
 
 
 
