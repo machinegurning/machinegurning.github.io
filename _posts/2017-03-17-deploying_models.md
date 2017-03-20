@@ -1,4 +1,3 @@
- 
 ---
 title: "Deploying a model"
 author: matt_gregory
