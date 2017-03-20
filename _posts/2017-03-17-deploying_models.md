@@ -16,7 +16,7 @@ tags:
 - http
 - jug
 - classification
--random forest
+- random forest
 categories: Rstats
 output: html_document
 ---
