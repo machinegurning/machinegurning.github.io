@@ -1,16 +1,22 @@
  
 ---
-title: "It's if_else statements all the way down..."
+title: "Deploying a model"
 author: matt_gregory
 comments: yes
 date: '2017-03-17'
 modified: 2017-03-20
 layout: post
-excerpt: "How to tidy up multiple if and else if statements"
+excerpt: "How to show off your random forest"
 published: TRUE
 status: processed
 tags:
-- case when
+- model
+- export
+- deploy
+- http
+- jug
+- classification
+-random forest
 categories: Rstats
 output: html_document
 ---
