@@ -23,8 +23,8 @@ categories: Rstats
 I've praised the utility of decision trees in other scenarios especially where accountability and transparency of decision making is important. Here we explore why decision trees are a good introduction to Machine Learning and its ability to spot patterns in data providing insight.
  Decision trees are arguably easier to interpret and more inline with human thinking than some other ML methods, thus we write a post here to use a fast and frugal tree method, providing a quick solution to a classification problem.
  
-This post is based on another [blog post](https://www.r-bloggers.com/making-fast-good-decisions-with-the-fftrees-r-package/), which makes a rther contrived comparison of a logistic regression and a decision tree.
-Arguable the difficulty of interpreation of logistic regression to the non-expert could be avoided by having a suitable front end, as many users will not need to see how the decision tool operates under the hood.
+This post is based on another [blog post](https://www.r-bloggers.com/making-fast-good-decisions-with-the-fftrees-r-package/), which makes a rather contrived comparison of a logistic regression and a decision tree.
+Arguable the difficulty of interpretation of logistic regression to the non-expert could be avoided by having a suitable front end, as many users will not need to see how the decision tool operates under the hood.
 However, the `FFTrees` package provides a user with everything they need in a few lines of code, and comes with excellent vignettes and documentation using some classic ML datasets.
  
 

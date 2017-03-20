@@ -1,0 +1,304 @@
+---
+title: "Dealing with dates"
+author: matt_upson
+comments: yes
+date: '2017-01-28'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Easy date aggregations"
+published: TRUE
+status: processed
+tags:
+- dates
+- data science
+- R
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#checkpoint::setSnapshot('2016-12-20')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = TRUE,
+  fig.height = 9, 
+  fig.width = 6
+  )
+```
+
+In the past I have worked with a number of timeseries of sensor data that I collected using raspberry pis, arduinos, and esp8266 modules.
+It's not something I do regularly enough to remember the best way to do it, so I'm writing this post as a reminder to myself, and perhaps someone will benefit from my *aide-memoire*.
+
+In previous posts I have combined data from two sensors I built, both based on raspberry pis (e.g. [Measuring obsession](http://www.machinegurning.com/rstats/infographic1/)). 
+[The first sensor](https://github.com/ivyleavedtoadflax/Sensor) sampled internal and external temperature, internal humidity, and internal light levels at a frequency of once every three minutes.
+[Another sensor](https://github.com/ivyleavedtoadflax/elec) I built recorded my electricity usage every minute by essentially counting the pulses on my electricity meter.
+
+The data are all in the [machinegurning](https://github.com/machinegurning/machinegurning.github.io/tree/master/data) github repo, so I'll access it here.
+In the cleaned state that they are available in, the data consist of some 750,000 observations.
+
+```{r load_packages_and_data}
+library(tidyverse)
+library(RCurl)
+library(govstyle)
+library(scales)
+library(lubridate)
+
+# To make things run a little faster, and to exacerbate the problem of
+# non-matching timescales, I'll take a smaller sample of these data comprising
+# just 100,000 data points
+
+sensor_data <- read_rds('data/2015-12-24-sensorpi_join.Rds') %>%
+  sample_n(100000) %>%
+  mutate(
+    key1 = ifelse(grepl('temp', key), 'temp', as.character(key)),
+    key1 = factor(key1)
+    )
+
+# Produce some very simple summary stats on these data
+
+sensor_data %>% 
+  str
+
+```
+
+So what are the simple ways that we can visualise the data, first off?
+
+```{r 2017-01-21_whole_timeseries}
+
+p <- sensor_data %>%
+  ggplot +
+  aes(
+    x = timestamp,
+    y = value,
+    colour = key
+  ) + 
+  geom_line() + 
+  facet_wrap(
+    ~key1, 
+    scale = 'free_y', 
+    ncol = 1
+  ) +
+  theme_gov(
+    base_colour = 'black'
+  ) + 
+  scale_colour_manual(
+    values = unname(gov_cols[c('turquoise','light_blue','purple','pink','green')])
+  ) +
+  scale_y_continuous(labels = scales::comma) + 
+  theme(
+    legend.position = 'bottom',
+    legend.key = element_blank()
+    )
+
+
+p
+
+```
+
+Great, so `ggplot` is smart enough to detect that we need time on the x-axis, and it gives us an appropriate scale - good job Hadley! 
+
+We can also set the breaks we want...
+
+```{r 2017-01-21_subset}
+p %+%
+  (sensor_data %>% dplyr::filter(
+    timestamp < '2015-07-01',
+    timestamp > '2015-06-14'
+    )) + 
+  scale_x_datetime(date_breaks = '3 days')
+
+```
+
+And these can be times, not just dates - smart.
+
+```{r 2017-01-21_single_day}
+
+p %+%
+  (sensor_data %>% dplyr::filter(
+    timestamp > '2015-07-01',
+    timestamp < '2015-07-02'
+    )) + 
+  scale_x_datetime(
+    date_breaks = '2 hours',
+    date_labels = '%H:%M'
+    )
+
+```
+
+
+### Date aggregation
+
+OK, so far so good, all very simple.
+
+The fun begins when we start to aggregate this data.
+In this case I use `tidyr::spread` to move this data from long format to wide format.
+
+```{r}
+
+sensor_data_wide <- sensor_data %>%
+  select(-key1) %>%
+  spread(
+    key, value
+  )
+
+```
+
+Because we started by randomly sampling 100,000 values from a dataset of 750,000, and this dataset was in long format, we are likely to have a lot of `NA` values across the various values of the timeseries:
+
+```{r}
+sensor_data_wide %>%
+  slice(1:10) %>%
+  knitr::kable()
+```
+
+Just looking at these rows, we can see that there are often multiple observations per minute.
+
+Two problems I often have are: 
+* how to aggregate to the nearest unit of time, and
+* how to aggregate across a unit of time
+
+This is the difference between aggregating to every five minutes of every day, and aggregating to every five minutes across all days.
+
+The former is easy, and can be achieved with `lubridate::ceiling_date` and `lubridate::floor_date`.
+Ceiling rounds up, whilst floor rounds down, and we can choose any time period of interest:
+
+```{r}
+
+test_dates <- sensor_data_wide$timestamp[1:10] 
+
+test_dates
+
+ceiling_date(test_dates, unit = '5 minutes') %>% unique
+floor_date(test_dates, unit = '5 minutes') %>% unique
+
+ceiling_date(test_dates, unit = '30 minutes') %>% unique
+floor_date(test_dates, unit = '30 minutes') %>% unique
+
+ceiling_date(test_dates, unit = '1 hour') %>% unique
+floor_date(test_dates, unit = '1 hour') %>% unique
+
+ceiling_date(test_dates, unit = '3 hours') %>% unique
+floor_date(test_dates, unit = '3 hours') %>% unique
+
+```
+
+...you get the idea.
+
+But if I wanted to plot the average temperature at five minute intervals for each month, I will not be able to do this:
+
+```{r 2017-01-21_daily_average_1}
+
+p <- sensor_data %>% 
+  dplyr::filter(
+    key == 'int_temp',
+    timestamp < '2015-12-01'
+    ) %>%
+     mutate(
+       month = month(timestamp),
+       timestamp = ceiling_date(timestamp, '5 minutes')
+     )  %>%
+     group_by(month, timestamp) %>%
+     summarise(
+       value = median(value)
+     ) %>%
+  ggplot + 
+  aes(
+    x = timestamp,
+    y = value
+  ) + 
+  geom_line(
+    colour = gov_cols[['purple']]
+    ) +
+  facet_wrap(
+    ~month,
+    ncol = 2
+    ) + 
+  scale_x_datetime(
+    date_labels = '%H:%M'
+  ) +
+  geom_smooth(
+    col = 'red',
+    size = 0.5) +
+  theme_gov()
+
+p
+```
+
+This doesn't give us what we want because there is still date information wrapped up within the timestamp, so we only get a timeseries of each value from each month. 
+To get what we want is a little more tricky, and there may well be a better way that I have not yet discovered, but this is what I have been doing so far.
+
+First we need to extract the time from the timestamp without date information.
+
+```{r}
+format(test_dates,"%H:%M:%S")
+```
+The downside here is that while `format` will return time as a `character` vector, so we will not be able to rely on `ggplot2` to cleverly adjust axes.
+
+To fix this, we can turn these times back into timestamps, but this time with all the same date.
+
+```{r}
+
+get_time <- function(x) {
+
+   time_ <- strftime(x, format = "%H:%M:%S")
+   datetime_ <- as.POSIXct(time_, format = "%H:%M:%S")
+   return(datetime_)
+   
+}
+
+get_time(test_dates)
+
+```
+
+Now we can get the plot we are after:
+
+```{r 2017-01-21_daily_average_2}
+
+p <- sensor_data %>% 
+  dplyr::filter(
+    key == 'int_temp',
+    timestamp < '2015-12-01'
+    ) %>%
+     mutate(
+       month = month(timestamp),
+       timestamp = get_time(timestamp),
+       timestamp = ceiling_date(timestamp, '5 minutes')
+     )  %>%
+     group_by(month, timestamp) %>%
+     summarise(
+       value = median(value)
+     ) %>%
+  ggplot + 
+  aes(
+    x = timestamp,
+    y = value
+  ) + 
+  geom_line(
+    colour = gov_cols[['purple']]
+    ) +
+  facet_wrap(
+    ~month,
+    ncol = 2
+    ) + 
+  scale_x_datetime(
+    date_labels = '%H:%M'
+  ) +
+  geom_smooth(
+    col = 'red',
+    size = 0.5) +
+  theme_gov()
+
+p
+
+```
+
+If anyone knows a better way of doing this, I would love to know, but this works for now.
+
+```{r}
+devtools::session_info()
+```
