@@ -6,7 +6,7 @@ date: '2017-02-25'
 modified: 2017-03-20
 layout: post
 excerpt: "The dangers of cherry picking evidence"
-published: FALSE
+published: TRUE
 status: processed
 tags:
 - leaflet

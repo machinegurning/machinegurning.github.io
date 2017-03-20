@@ -1,0 +1,398 @@
+
+---
+title: "Deploying a model"
+author: matt_gregory
+comments: yes
+date: '2017-03-17'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "How to show off your random forest"
+published: TRUE
+status: processed
+tags:
+- model
+- export
+- deploy
+- http
+- jug
+- classification
+-random forest
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+checkpoint::setSnapshot('2016-12-22')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+This blog post draws heavily on Chapter 10 in the excellent [Practical Data Science with R](https://www.manning.com/books/practical-data-science-with-r).  
+
+To understand the different layers of a [full-stack](https://www.quora.com/What-does-the-term-full-stack-programmer-mean) development it can be useful to produce a reference deployment of your model. This can be a good way to jump-start deployment as it can allow experienced engineers (who are better suited to true production deployment) to tinker and experiment with your work, test [corner cases](https://en.wikipedia.org/wiki/Corner_case) and build [acceptance tests](https://en.wikipedia.org/wiki/Acceptance_testing).  
+
+We'll work through using the [Student Performance dataset](https://archive.ics.uci.edu/ml/datasets/Student+Performance) that we have seen a few times on this [blog](http://www.machinegurning.com/rstats/student-performance/). We are interested in predicting whether students are likely to pass or fail their end of year exam (`G3` variable above a made-up threshold of 10). Again we use the Maths results only reading off the web from our [Github data repo](https://github.com/machinegurning/machinegurning.github.io/tree/master/data).  
+
+```{r}
+library(tidyverse)
+
+d <- readr::read_delim("https://raw.githubusercontent.com/machinegurning/machinegurning.github.io/master/data/2016-03-01_student_performance.csv", delim = ";")
+
+d$outcome <- NULL
+ 
+d$outcome <- factor(
+  ifelse(d$G3 >= 10, 1, 0), 
+  labels = c("fail", "pass")
+  )
+
+d <- select(d, -G3)
+```
+
+To help with the wrangling and tidying of data, I have developed a series of [data stories on Github](https://github.com/mammykins/data_stories) which provide some standard useful code for preparing and exploring data. We employ some of that here. Given our history with this data we don't go into detail. See if you can follow the code. 
+
+```{r}
+#  names(d)
+#  inspect data, any need normalising? or logicising or 
+to_normalise <- names(select(d, age, Medu:Fedu, traveltime:failures,
+                             famrel:G2))
+factorise  <- names(select(d,
+                           school, sex, address:Pstatus,
+                           Mjob:guardian, schoolsup:romantic,
+                           outcome))
+logicise <- c()
+
+library(scales)  #  rescale handles NAs, there are no NAs in this data
+#  nrow(d) - sum(complete.cases(d))
+
+d_norm <- d %>%
+  na.omit() %>%
+  mutate_each_(funs(rescale), to_normalise) %>%
+  mutate_each_(funs(as.factor), factorise)
+
+glimpse(d_norm)
+```
+
+## Training and test datasets
+
+We need to split the data so we can build the model and then test it, to see if it generalises well. This gives us confidence in the external validity of the model. The data arrived in a random order thus we don't need to worry about sampling at random.  
+
+```{r}
+
+data_train <- d_norm[1:350, ]
+data_test <- d_norm[351:395, ]  #  we normalised with our data sets merged, unrealistic
+
+```
+
+## Building the model
+
+Prior to building the model we prepare some model evaluation tools to report the model quality. As a reminder the random forest approach is useful as it tries to de-correlate the trees of which it is ensembled by randomising the set of variables that each tree is allowed to use. It also initiates by drawing a bootstrapped sample from the training data.  
+
+```{r}
+# these were defined in Chapter 9 of Practical Data Science with R
+loglikelihood <- function(y, py) {
+  pysmooth <- ifelse(py == 0, 1e-12,
+                     ifelse(py == 1, 1 - 1e-12, py))
+  sum(y * log(pysmooth) + (1 - y)*log(1 - pysmooth))
+}
+accuracyMeasures <- function(pred, truth, threshold=0.5, name="model") {
+  dev.norm <- -2*loglikelihood(as.numeric(truth), pred)/length(pred)
+  ctable = table(truth = truth,
+                 pred = pred)
+  accuracy <- sum(diag(ctable))/sum(ctable)
+  precision <- ctable[2,2]/sum(ctable[,2])
+  recall <- ctable[2,2]/sum(ctable[2,])
+  f1 <- precision*recall
+  print(paste("precision=", precision, "; recall=" , recall))
+  print(ctable)
+  data.frame(model = name, accuracy = accuracy, f1 = f1, dev.norm)
+}
+```
+
+
+We train a simple random forest classifier.
+
+```{r}
+library(randomForest)
+#  make a list of avaialble variables if necessary
+varslist <- names(select(d_norm, -outcome))
+customFormula <- paste('outcome ~ ', paste(varslist, collapse = ' + '))
+
+
+set.seed(1337)
+fmodel <- randomForest(as.formula(customFormula),
+                      data = data_train,
+                      importance = T)
+
+```
+
+#### Training
+
+```{r}
+# print('training')
+rtrain <- data.frame(truth = data_train$outcome, pred = predict(fmodel, newdata = data_train))
+# print(accuracyMeasures(rtrain$pred, rtrain$truth))
+# ggplot(rtrain, aes(x=pred, color=(truth==1),linetype=(truth==1))) + 
+#    geom_density(adjust=0.1)
+```
+
+#### Testing
+
+```{r}
+# print('testing')
+rtest <- data.frame(truth = data_test$outcome, pred = predict(fmodel, newdata = data_test))
+# print(accuracyMeasures(rtest$pred, rtest$truth))
+# ggplot(rtest, aes(x=pred, color=(truth==1),linetype=(truth==1))) + 
+#    geom_density(adjust=0.1)
+```
+
+Notice the negligible fall-off from training to test performance, the default random forest provided an OK fit. However, we are more interested in the export of the model, so we move on to that now. If interested run this code to examine variable importance (try to guess what variables are probably the most useful for predicting end of year exam performance?).   
+
+```{r eval = FALSE}
+varImpPlot(fmodel, type = 1)
+```
+
+## Deploying models by export
+
+Training the model is the hard part, lets export our finished model for use by other systems. When exporting the model we let our development partners deal with the difficult parts of development for production. We chose the `randomForest` function as the help suggests that the underlying trees are accessible using the `getTree` function. Our Forest is big but simple.
+
+### Save the workspace
+
+Training the model and exporting it are likely to happen at different times. We can save the workspace that includes the random forest model and load it along with the `randomForest` library prior to export at a later date if required. We show how to save the workspace below, or you could save the `randomForest` object using the `saveRDS` function.
+
+```{r echo = FALSE, eval=FALSE}
+fname <- "rf_student_performance.Rdata"
+fname_with_path <- "./data/rf_student_performance.Rdata"
+
+if (!file.exists(fname_with_path)) {
+   save(list = ls(), file = fname)
+   message(paste('saved', fname))  # message to running R console
+   print(paste('saved', fname))    # print to document
+} else {
+   message(paste('skipped saving', fname)) # message to running R console
+   print(paste('skipped saving', fname))   # print to document
+}
+```
+
+A [random forest](https://en.wikipedia.org/wiki/Random_forest) model is a collection of decision trees. A decision tree is a series of tests traditionally visualised as a diagram of decision nodes. With the random forest saved as an object we can define a function that joins the tree tables from the random forest `getTree` method into one large table of trees. This can then be exported as a table representation of the random forest model that can be used by developers.
+
+We look at the first decision tree from our random forest model, `fmodel`. We can also count the number of rows in the decision table.
+
+```{r}
+nrow(getTree(fmodel, k = 1, labelVar = FALSE))
+```
+
+And see the output as a matrix. We could export like this if we want to avoid characters.
+
+```{r}
+getTree(fmodel, k = 1, labelVar = FALSE) %>%
+  head(10)
+```
+
+## Interpreting the decision tree as a table
+
+Read the help using `?getTree`. We set the argument for `labelVar=TRUE` below to provide better human readable labels for our splitting variables and predicted class providing the output as a dataframe.  
+
+```{r}
+getTree(fmodel, k = 1, labelVar = TRUE) %>%
+  head(12)
+```
+
+### Worked example
+
+We demonstrate the interpretation using an example. Imagine you had a test case for the student Joe Bloggs; a non-romantic student, who has failed three times before and with first term (G1) scaled attainment score of 0.22. Joe has promised he has turned over a new leaf since hearing about the use of machine learning in his school!    
+
+We start at the first row and will proceed until we have a prediction for our student at a terminal node (a row with the `status` variable as `-1` and `left daughter` and `right daughter` variables as zero; e.g. rows 6, 9 and 10 are terminal nodes). 
+
+* Start at row one and ask has your student failed the exam fewer times than the split point?
+
+For numerical predictors, data with values of the variable less than or equal to the splitting point go to the left daughter node. Our student failed three times and this is greater than the `split point`. However, we must be careful and remember to transform our inputs in the same way we did for training our model, we could do this by getting the percentile our student's number of failures is in and reminding ourselves of the distribution of the `failures` variable (during production this would be automated, we show it here for understanding).
+
+```{r}
+table(d$failures)  #  all the data
+table(data_train$failures)  # just training, normalised / scaled
+
+```
+
+Three failures is the maximum seen and was therefore scaled to one. One is greater than the `split point` therefore we proceed to the `right daughter` row of the decision table (row 3). 
+
+* At row 3 we ask Joe Bloggs whether his `G1` scaled score was less than 0.28?
+
+Joe scored 0.22 which is less than 0.28, thus we proceed to the `left daugther`.
+
+* At row 6 we notice zeroes and `NA`, we also notice a `status` of `-1`. We are at a terminal node! A decision has been made, Joe Bloggs is at risk of `fail`!
+
+#### Always make sure your inputs in production are bounded
+
+What would happen if a student failed four times? Would the production model predictions be able to cope? Developers can help you to defend against such problems. This is one issue of exporting a model, you have to produce a specification of the data treatment.   
+
+#### Always make sure your predictions in production are bounded
+
+For a classification problem, your predictions are automatically bounded between 0 and 1. If this were a regression we would want to limit the predictions to be between the `min` and `max`
+ observed in the training set.
+According to the help, for categorical predictors, the splitting point is represented by an integer, whose binary expansion gives the identities of the categories that goes to left or right. 
+
+### How do I convert this into a percentage?
+
+You can think of each decision tree in your forest as being one expert which has a slightly different life experience. It's seen different students and might have prioritised some variables over others (sort-of). If each expert votes `pass` or `fail` then you can produce a percentage or probability of each `outcome` for each new student.
+
+### Seeing the forest of the trees
+
+So your developer partners would need access to all the decision trees in a table to then build tools to read the model trees and evaluate the trees on new data. We simply need to define a function that joins the tree tables from the random forest `getTree()` method into one large table of trees. We write the table as a [tab-separated values table](https://github.com/machinegurning/machinegurning.github.io/tree/master/data) (or whatever is easy for the developers software to read).  
+
+```{r eval = FALSE}
+extract_trees <- function(rfModel) {
+  ei <- function(i) {
+    ti <- getTree(rfModel, k = i, labelVar = TRUE)
+    ti$nodeid <- 1:dim(ti)[[1]]
+    ti$treeid <- i
+    ti
+  }
+  nTrees <- rfModel$ntree
+  do.call("rbind", sapply(1:nTrees, ei, simplify = FALSE))
+}
+
+#  write_tsv is tidyverse, ergo no row numbers, however the nodeid variable covers this
+readr::write_tsv(extract_trees(fmodel),
+            path = "../data/2017-03-17-rf_export.txt")  
+
+```
+
+Open the raw text file we produced and inspect it. You should see 500 trees of varying thickness (number of nodes). Delve into the tenebrious forest to discover insight and excellent prediction accuracy.  
+
+### JSON format
+
+We can adjust our output for our colleagues as necessary, mapping between R objects and JSON using [jsonlite](https://arxiv.org/abs/1403.2805).  
+
+```{r eval=FALSE}
+#  http://stackoverflow.com/questions/25550711/convert-data-frame-to-json
+library(jsonlite)
+x <- extract_trees(fmodel)
+y <- toJSON(unname(split(x, 1:nrow(x))))  #  takes a while
+```
+
+## Export summary
+
+You should be comfortable exporting a random forest model to others allowing model evaluation to be reimplemented in a production environment. If it were just coefficients of a linear regression it would be even easier!  
+
+# Deploying models as R HTTP services
+
+An alternative, that is also quite easy to set-up, is to expose the R model as an HTTP service. One could copy the code and modify to our specific example from this [Github](https://github.com/mammykins/zmPDSwR/tree/master/Buzz) example. See the comments in the repo for guidance and for a more detailed tutorial see this older [blog post](https://www.r-bloggers.com/a-simple-web-application-using-rook/) or this one using [googleVis](http://www.magesblog.com/2012/08/rook-rocks-example-with-googlevis.html).
+
+```{r echo = FALSE, eval = FALSE}
+library(Rook)
+
+varslist <- names(data_train)
+numericPositions <- sapply(data_train[, varslist], is.numeric)  #  which variables are numeric?
+
+#  declare the modelling service
+modelFn <- function(env) {
+  errors <- c()
+  warnings <- c()
+  val <- c()
+  row <- c()
+  
+  tryCatch(
+    {
+      # this block does the actual work by parsing the data
+      # and applying the model
+      arg <- Multipart$parse(env)
+      row <- as.list(arg[varslist])
+      names(row) <- varslist
+      row[numericPositions] <- as.numeric(row[numericPositions])
+      frame <- data.frame(row)
+      val <- predict(fmodel, newdata = frame)
+      },
+    warning = function(w) { message(w)
+      warnings <<- c(warnings,as.character(w)) },
+    error = function(e) { message(e)
+      errors <<- c(errors,as.character(e)) }
+)
+#  format the results and place into a list to be returned
+  body <- paste(
+    'val=',val,'\n',
+    'nerrors=',length(errors),'\n',
+    'nwarnings=',length(warnings),'\n',
+    'query=',env$QUERY_STRING,'\n',
+    'errors=',paste(errors,collapse = ' '),'\n',
+    'warnings=',paste(warnings,collapse = ' '),'\n',
+    'data row','\n',
+    paste(capture.output(print(row)),collapse = '\n'),'\n',
+    sep = '')
+  list(
+    status = ifelse(length(errors) <= 0, 200L, 400L),
+    headers = list('Content-Type' = 'text/text'),
+    body = body )  
+}
+
+s <- Rhttpd$new()
+s$add(name = "modelFn", app = modelFn)
+s$start()
+print(s)
+```
+
+# Deploy model through a simple API
+
+We can also build a sort of "black-box" model which is accessible through a web-based API. The advantage of this is that a web call can be very easily made from (almost) any programming language, making integration of the ML model quite easy. Below we show you the structure of how you might do this based on Bart's [example](http://fishyoperations.com/2015/11/24/making-an-r-based-machine-learning-model-accessible-a-simple-api.html). For brevity I did not complete this but you get the idea... 
+
+```{r eval = FALSE}
+# http://fishyoperations.com/2015/11/24/making-an-r-based-machine-learning-model-accessible-a-simple-api.html
+
+#  SAVE and Load if required
+# saveRDS(fmodel, "../data/2017-03-17-rf_fit.Rdata")
+# fmodel <- readRDS("../data/2017-03-17-rf_fit.Rdata")
+
+varslist <- names(data_train)
+the_predictors <- varslist[-33]  #  we drop the outcome variable
+
+predict_outcome <- function(the_predictors){
+
+  new_data <- data.frame(school = as.factor(school, levels = c("GP", "MS")),
+                         sex = as.factor(sex, levels = c("F", "M")),
+                         age = as.numeric(age) # etc., need to code input transformation!
+                         )
+
+  predict(fmodel
+          , newdata = new_data)
+
+}
+
+
+
+library(jug)
+
+jug() %>%
+  post("/rf_api", decorate(predict_outcome)) %>%
+  simple_error_handler() %>%
+  serve_it()
+
+```
+
+The result is that we now have a live web-based API. We can post data to it and get back a predicted value. We could post a query using the command line tool by seeing the URL with [curl](https://en.wikipedia.org/wiki/CURL) and passing the necessary student characteristics.
+
+```{r eval=F}
+#  write some code here to convert input into this format
+#  or manually enter for demonstration
+
+curl -s --data "school=MS&sex=M&age=0.57&... etc." http://127.0.0.1:8080/rf_api
+
+#  Compare to
+#  predict(fmodel, data_test[1, ])
+```
+
+Voila!
+
+# Take home
+
+Show your model off; export it or set up an HTTP service or build an API.
+
+```{r}
+sessionInfo()
+```
