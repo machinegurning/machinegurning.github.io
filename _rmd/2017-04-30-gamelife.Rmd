@@ -49,6 +49,8 @@ or "on" (0 or 1), i.e. a two-state model.
 
 Before we proceed to give the rules of Life and a R implementation you should investigate it for yourself. The rules all depend on the eight nearest-neighbours of a cell.  
 
+
+
 * Go to the interactive Life game at http://www.julianpulgarin.com/canvaslife/  
 * Create some initial live cells by clicking on cells in the grid (black cells indicate cells that are alive).  
 * Click on Next Generation to see what happens at the next timestep.  
@@ -59,9 +61,115 @@ Before we proceed to give the rules of Life and a R implementation you should in
 
 The three rules of life are:
 
-* a cell dies if it has less than two or more than three nearest neighbours. This reects under population (Allee type effect) and over population respectively;  
+* a cell dies if it has less than two or more than three nearest neighbours. This reflects under population ([Allee type effect](https://en.wikipedia.org/wiki/Allee_effect)) and over population respectively;  
 * a cell remains alive if it has two or three nearest neighbours;  
 * a cell is born in an empty grid space if it has three nearest neighbours.
 
+### Don't reinvent the wheel
 
+A quick Google search using the search term "cran package game of life" identified the `simecol` package as being potentially useful for exploring this problem (it is also useful practice to think about how you might code this problem yourself - look on [Github](https://github.com/) for other examples).   
+
+```{r}
+library(simecol)
+```
+
+A nice feature of `simecol` that helps with its reproducibility and inspired some of my own package design is the construction of "all-in-one" model objects. That is, everything that defines one particular model, equations and data are stored together in one `simObj` (spoken: sim-Object). This package also holds simplicity over efficiency in its design principles as its target users (ecologists) often have limited programming experience.  
+
+```{r eval = FALSE}
+# data("conway")
+
+conway <- new("gridModel",
+  main = function(time, init, parms) {
+    x      <- init
+    nb     <- eightneighbours(x)
+    surviv <- (x >  0 & (nb %in% parms$srv))
+    gener  <- (x == 0 & (nb %in% parms$gen))
+    x <- matrix((surviv + gener) > 0, nrow = nrow(init))
+    return(x)
+  },
+  parms  = list(srv = c(2, 3), gen = 3),
+  times  = 1:17,
+  init   = matrix(round(runif(1000)), ncol = 40),
+  solver = "iteration"
+)
+
+```
+
+This is evident when looking at the default code for Conway's Game of Life shown above. The internal function `eightneighbours` returns the sum of the eight neighbours of a cell within a matrix. Look at the matrix `m1` and the output of `eightneighbours` when we pass it `m1` (as the argument `init` which normally defaults as random). If our 3 by 3 grid were subject to rules of life (refer to them again above) what would `m2` look like in the next generation?  
+
+```{r}
+m1 <- matrix(0, 10, 10)
+m1[5:6, 5:6] <- 1
+
+# 1 alive, 0 dead
+m1
+
+heatmap(m1, Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none")
+
+```
+
+```{r}
+# numbers provide count of alive neighbours
+eightneighbours(m1)
+```
+
+(The complexity in `conway` is further hidden from the user by calling the `solver = "iteration"`, pointing towards another function in the `desolve` package (this package also contains General Solvers for Initial Value Problems of Ordinary Differential Equations)).  
+
+Let's check what happens to our Block described above in `m1` (note how the cells appear to be wider (x) than they are tall (y)).  
+
+```{r}
+## test our expectations from above on larger grid
+
+init(conway) <- m1
+times(conway) <- 1:2
+plot(sim(conway), col = c("white", "green"), axes = FALSE)
+```
+
+A strong and stable cellular formation that will persist. Re-read the rules to check you can see why and also extend the run of the simulation by changing how long the simulation runs for using `times(conway) <- 1:10`. These are known as still-lifes. Can you think of another four cell organism that will create a still-life?
+
+```{r}
+init(conway) <- m1
+times(conway) <- 1:100
+
+boring_block <- sim(conway)
+```
+
+We can access the underlying data and check by summing each matrix what happens to the population; is the block stable?
+
+```{r}
+population <- lapply(out(sim(conway)), sum)
+
+population <- unlist(population)
+
+plot(population, type = "l", xlab = "Generation",
+     col = "green", lwd = 5)
+```
+
+## Playtime
+
+We can visualise how simple rules can give rise to complexity ([The Blind Watchmaker](https://en.wikipedia.org/wiki/The_Blind_Watchmaker)); like stumbling upon a pocket-watch found on a beach. 
+
+Let's explore a [few more interesting examples](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) by specifying the starting cells that are alive. We create initial life by assigning those cells in a finite grid with values of one to be alive and zero if not. It is very difficult to predict what will happen and how long life will persist for in the grid making this a popular mathematical curio.  
+
+```{r}
+m2 <- matrix(0, 20, 20)
+m2[8:10, 8:10] <- 1
+m2[8, c(8, 10)] <- 0
+m2[9, c(9, 10)] <- 0
+
+# 1 alive, 0 dead
+heatmap(m2, Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none")
+```
+
+### Fly my pretty
+
+```{r}
+# Copy and paste into R
+init(conway) <- m2
+times(conway) <- 1:100
+
+glider <- sim(conway, animate = TRUE, delay = 100)
+
+# glider
+```
 
