@@ -38,7 +38,9 @@ knitr::opts_chunk$set(
 
 This blog post draws heavily on the excellent [SysMIC](https://sysmic.ac.uk/) course I completed during my PhD. 
 
-Agent based models (ABM) are one of a class of computational models for simulating the actions and interactions of autonomous agents (both individual or collective entities such as organizations or groups). The goal of ABM is to search for explanatory insight into the collective behavior of agents obeying simple rules, typically in natural systems. There are many ways to get hooked on ABM, for me I found the Game of Life intriguing (there are many examples from [ecological](https://www.openabm.org/book/3138/12-interesting-example-bali) and [socioeconomical systems](http://www.sciencedirect.com/science/article/pii/S2095263512000167)). 
+Agent based models (ABM) are one of a class of computational models for simulating the actions and interactions of autonomous agents (both individual or collective entities such as organizations or groups). The goal of ABM is to search for explanatory insight into the collective behavior of agents obeying simple rules, typically in natural systems. There are many ways to get hooked on ABM, for me I found the Game of Life intriguing (there are many examples from [biological](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3640333/), [ecological](https://www.openabm.org/book/3138/12-interesting-example-bali) and [socioeconomical systems](http://www.sciencedirect.com/science/article/pii/S2095263512000167)).  
+
+This blog post is interested in how from simple rules complexity can [emerge](https://en.wikipedia.org/wiki/Emergence).  
 
 ## Conway's Game of Life
 
@@ -110,8 +112,15 @@ m1[5:6, 5:6] <- 1
 
 # 1 alive, 0 dead
 m1
+```
 
-heatmap(m1, Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none")
+We can visualise the matrix.
+
+```{r 30-04-30_m1}
+
+heatmap(m1, Rowv = NA, Colv = NA, col = c("white", "green"),
+        scale = "none", labRow = FALSE, labCol = FALSE,
+        margins = c(2, 2))
 
 ```
 
@@ -124,7 +133,7 @@ eightneighbours(m1)
 
 Let's check what happens to our Block described above in `m1` (note how the cells appear to be wider (x) than they are tall (y)).  
 
-```{r}
+```{r 30-04-30_still_life}
 ## test our expectations from above on larger grid
 
 init(conway) <- m1
@@ -158,33 +167,115 @@ We can visualise how simple rules can give rise to complexity ([The Blind Watchm
 
 Let's explore a [few more interesting examples](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) by specifying the starting cells that are alive. We create initial life by assigning those cells in a finite grid with values of one to be alive and zero if not. It is very difficult to predict what will happen and how long life will persist for in the grid making this a popular mathematical curio.  
 
-```{r}
+```{r 30-04-30_glider}
 m2 <- matrix(0, 20, 20)
 m2[8:10, 8:10] <- 1
 m2[8, c(8, 10)] <- 0
 m2[9, c(9, 10)] <- 0
 
 # 1 alive, 0 dead
-heatmap(m2, Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none")
+heatmap(m2, Rowv = NA, Colv = NA, col = c("white", "green"),
+        scale = "none", labRow = FALSE, labCol = FALSE,
+        margins = c(2, 2))
 ```
 
-### Fly my pretty
+### Spontaneous appeared Spaceships out of Random Dust
 
-Run this code after uncommenting `glider`.
+Run this code after uncommenting `glider` (fly my pretty).
 
 ```{r}
 # Copy and paste into R
 init(conway) <- m2
 times(conway) <- 1:15
 
-# glider <- sim(conway, animate = TRUE, delay = 100)
+# glider <- sim(conway, animate = TRUE, delay = 100, 
+#   col=c("white", "green"), axes = FALSE)
 
 # glider
 ```
 
-## Extension
+Try out other [gliders and spaceships](http://wwwhomes.uni-bielefeld.de/achim/moving.html).  
 
-In this part you will adapt the original life program to include some more realistic cellular behaviours and thus build more interesting agent based models from a biological point of view. A simple way to do this is to alter the values for the number of nearest neighbours affecting cell births and deaths.  
+## Back to reality
 
-We know that bacteria will undergo replication in an exponential fashion if the resources are available but we have already seen that with the original Life model.  
+In this part we will adapt the original life program to include some more realistic cellular behaviours and thus build more interesting agent based models from a biological point of view. A simple way to do this is to alter the values for the number of nearest neighbours affecting cell births and deaths.  
+
+We can assume that our bacteria are growing in a Petri dish and multiply asexually (no partners required). Each bacterium can grow as long as it is not completely surrounded. The bacteria form a [biofilm](https://en.wikipedia.org/wiki/Biofilm) that helps with their survival, a lonely bacterium will perish.    
+
+```{r eval = TRUE}
+rm(conway)  #  clean the slate
+data(conway)  #  load fresh
+# ?conway  #  remind yourself of what you need to change
+
+bacteria <- conway
+parms(bacteria) <- list(srv = c(3, 4, 5, 6, 7),
+                        gen = c(1, 2, 3, 4))  #  change rules
+
+## a lonely bacterium on a manageable Petri dish
+m <- matrix(0, 50, 50)
+m[13, 37] <- 1
+init(bacteria) <- m
+
+
+petri_dish <- sim(bacteria,
+                  col = c("white", "green"), axes = FALSE)
+
+```
+
+### Exponential growth?
+
+```{r 30-04-30_pop}
+population <- lapply(out(petri_dish), sum)
+
+population <- unlist(population)
+
+plot(population, type = "p", xlab = "Generation",
+     col = "green", lwd = 3, pch = 21)
+```
+
+I wonder what caused the plateau between thirteen and fifteen? Appears to be localised to the bottom of the Petri dish where the bacteria are wiped out from overcrowding. This is probably due to edge effects of the Petri dish container and the off-centre start position of the first bacterium shown below.    
+
+### Initial
+
+```{r 30-04-30_bacterium}
+heatmap(petri_dish@out[[1]], Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
+```
+
+### Seventeen
+
+Our new rules allow the cells to reproduce and fill their container (given enough time) but they are constrained from creating a green square by the rule that says being totally surrounded casuses death.  
+
+```{r 30-04-30_bacteria}
+
+#  We inspect the final generation at 17 timesteps
+#  using the @out slot in the S4 object petri_dish
+heatmap(petri_dish@out[[17]], Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
+
+```
+
+### An accident
+
+We leave our Petri dish out next to a radiation source. The Petri dish is randomly struck by ionising radiation hitting some of our bacteria. We can use the matrix format of our simulated colony to easily simulate the effect of this event through matrix multiplication. 
+
+```{r 30-04-30_accident}
+set.seed(255)
+
+#  Determine where radiation hit
+#  50% chance it hit any particular cell within the Petri
+#  Independent of whether the cell had a bacterium or not
+
+radiation <- matrix(sample(c(0, 1), 2500, replace = TRUE),
+                    50, 50)
+
+#  Accidents happen
+woops <- petri_dish@out[[17]] * radiation
+
+heatmap(woops, Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
+```
+
+> Ever since its publication, Conway's Game of Life has attracted much interest, because of the surprising ways in which the patterns can evolve. Life provides an example of emergence and self-organization. It is interesting for computer scientists, physicists, biologists, biochemists, economists, mathematicians, philosophers, generative scientists and others to observe the way that complex patterns can emerge from the implementation of very simple rules.  The game can also serve as a didactic analogy, used to convey the somewhat counter-intuitive notion that "design" and "organization" can spontaneously emerge in the absence of a designer. - [Wikipedia](https://en.wikipedia.org/wiki/Conway's_Game_of_Life)  
+
+```{r}
+sessionInfo()
+```
 
