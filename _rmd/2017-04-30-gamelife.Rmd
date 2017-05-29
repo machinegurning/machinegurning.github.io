@@ -1,26 +1,21 @@
 ---
-title: "ABM"
-author: "Matthew Gregory"
-date: "30 April 2017"
+title: "Agent Based Modelling"
+author: matt_gregory
+comments: yes
+date: '2017-03-17'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "The game of life"
+published: FALSE
+status: process
+tags:
+- model
+- abm
+- agent based modelling
+- game of life
+categories: Rstats
 output: html_document
 ---
-
-
-<!-- --- -->
-<!-- title: "Agent Based Modelling" -->
-<!-- author: matt_gregory -->
-<!-- comments: yes -->
-<!-- date: '2017-03-17' -->
-<!-- modified: `r format(Sys.time(), '%Y-%m-%d')` -->
-<!-- layout: post -->
-<!-- excerpt: "The game of life" -->
-<!-- published: FALSE -->
-<!-- status: process -->
-<!-- tags: -->
-<!-- - model -->
-<!-- categories: Rstats -->
-<!-- output: html_document -->
-<!-- --- -->
 
 ```{r setup, include=FALSE}
 checkpoint::setSnapshot('2016-12-22')
