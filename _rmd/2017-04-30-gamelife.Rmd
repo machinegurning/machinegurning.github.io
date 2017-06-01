@@ -67,6 +67,9 @@ The three rules of life are:
 A quick Google search using the search term "cran package game of life" identified the `simecol` package as being potentially useful for exploring this problem (it is also useful practice to think about how you might code this problem yourself - look on [Github](https://github.com/) for other examples).   
 
 ```{r}
+# I had some trouble with installing simecol on a mac
+# Follow this advice to get fortran installed (if you don't have Homebrew for mac: google it!)
+# https://stackoverflow.com/questions/23916219/os-x-package-installation-depends-on-gfortran-4-8
 library(simecol)
 data("conway")
 ```
@@ -111,13 +114,15 @@ m1
 
 We can visualise the matrix.
 
-```{r 30-04-30_m1}
+```{r 2017-03-17_m}
 
 heatmap(m1, Rowv = NA, Colv = NA, col = c("white", "green"),
         scale = "none", labRow = FALSE, labCol = FALSE,
         margins = c(2, 2))
 
 ```
+
+See how `eightneighbours` works?
 
 ```{r}
 # numbers provide count of alive neighbours
@@ -128,7 +133,7 @@ eightneighbours(m1)
 
 Let's check what happens to our Block described above in `m1` (note how the cells appear to be wider (x) than they are tall (y)).  
 
-```{r 30-04-30_still_life}
+```{r 2017-03-17_still_life}
 ## test our expectations from above on larger grid
 
 init(conway) <- m1
@@ -138,7 +143,7 @@ plot(sim(conway), col = c("white", "green"), axes = FALSE)
 
 A strong and stable cellular formation that will persist. Re-read the rules to check you can see why and also extend the run of the simulation by changing how long the simulation runs for using `times(conway) <- 1:10`. These are known as still-lifes. Can you think of another four cell organism that will create a still-life?
 
-```{r}
+```{r 2017-03-17_population}
 init(conway) <- m1
 times(conway) <- 1:100
 
@@ -162,7 +167,7 @@ We can visualise how simple rules can give rise to complexity ([The Blind Watchm
 
 Let's explore a [few more interesting examples](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) by specifying the starting cells that are alive. We create initial life by assigning those cells in a finite grid with values of one to be alive and zero if not. It is very difficult to predict what will happen and how long life will persist for in the grid making this a popular mathematical curio.  
 
-```{r 30-04-30_glider}
+```{r 2017-03-17_glider}
 m2 <- matrix(0, 20, 20)
 m2[8:10, 8:10] <- 1
 m2[8, c(8, 10)] <- 0
@@ -219,7 +224,7 @@ petri_dish <- sim(bacteria,
 
 ### Exponential growth?
 
-```{r 30-04-30_pop}
+```{r 2017-03-17_pop}
 population <- lapply(out(petri_dish), sum)
 
 population <- unlist(population)
@@ -232,7 +237,7 @@ I wonder what caused the plateau between thirteen and fifteen? Appears to be loc
 
 ### Initial
 
-```{r 30-04-30_bacterium}
+```{r 2017-03-17_bacterium}
 heatmap(petri_dish@out[[1]], Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
 ```
 
@@ -240,7 +245,7 @@ heatmap(petri_dish@out[[1]], Rowv = NA, Colv = NA, col = c("white", "green"), sc
 
 Our new rules allow the cells to reproduce and fill their container (given enough time) but they are constrained from creating a green square by the rule that says being totally surrounded casuses death.  
 
-```{r 30-04-30_bacteria}
+```{r 2017-03-17_bacteria}
 
 #  We inspect the final generation at 17 timesteps
 #  using the @out slot in the S4 object petri_dish
@@ -252,7 +257,7 @@ heatmap(petri_dish@out[[17]], Rowv = NA, Colv = NA, col = c("white", "green"), s
 
 We leave our Petri dish out next to a radiation source. The Petri dish is randomly struck by ionising radiation hitting some of our bacteria. We can use the matrix format of our simulated colony to easily simulate the effect of this event through matrix multiplication. 
 
-```{r 30-04-30_accident}
+```{r 2017-03-17_accident}
 set.seed(255)
 
 #  Determine where radiation hit
