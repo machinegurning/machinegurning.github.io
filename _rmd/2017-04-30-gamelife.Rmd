@@ -70,19 +70,15 @@ A quick Google search using the search term "cran package game of life" identifi
 # I had some trouble with installing simecol on a mac
 # Follow this advice to get fortran installed (if you don't have Homebrew for mac: google it!)
 # https://stackoverflow.com/questions/23916219/os-x-package-installation-depends-on-gfortran-4-8
-library(simecol)
-data("conway")
+require(simecol)
+# data("conway")
 ```
 
 A nice feature of `simecol` that helps with its reproducibility and inspired some of my own package design is the construction of "all-in-one" model objects. That is, everything that defines one particular model, equations and data are stored together in one `simObj` (spoken: sim-Object). This package also holds simplicity over efficiency in its design principles as its target users (ecologists) often have limited programming experience.  
 
-```{r}
-isS4(conway)
-```
-
 This is facilitated by each simulation model being implemented as a S4 object (superclass simObj) with a number of customisable slots (see `?simecol`).
 
-```{r eval = FALSE}
+```{r}
 # data("conway")
 
 conway <- new("gridModel",
@@ -100,6 +96,8 @@ conway <- new("gridModel",
   solver = "iteration"
 )
 
+isS4(conway)
+
 ```
 
 This simplicity is evident when looking at the default code for Conway's Game of Life shown above. The internal function `eightneighbours` returns the sum of the eight neighbours of a cell within a matrix. Look at the matrix `m1` and the output of `eightneighbours` when we pass it `m1` (as the argument `init` which normally defaults as random). If our 3 by 3 grid were subject to rules of life (refer to them again above) what would `m2` look like in the next generation?  
@@ -112,9 +110,9 @@ m1[5:6, 5:6] <- 1
 m1
 ```
 
-We can visualise the matrix.
+We can use `heatmap` visualise the matrix.
 
-```{r 2017-04-30_m}
+```{r 2017-04-30-m}
 
 heatmap(m1, Rowv = NA, Colv = NA, col = c("white", "green"),
         scale = "none", labRow = FALSE, labCol = FALSE,
@@ -133,7 +131,7 @@ eightneighbours(m1)
 
 Let's check what happens to our Block described above in `m1` (note how the cells appear to be wider (x) than they are tall (y)).  
 
-```{r 2017-04-30_still_life}
+```{r 2017-04-30-still_life}
 ## test our expectations from above on larger grid
 
 init(conway) <- m1
@@ -143,7 +141,7 @@ plot(sim(conway), col = c("white", "green"), axes = FALSE)
 
 A strong and stable cellular formation that will persist. Re-read the rules to check you can see why and also extend the run of the simulation by changing how long the simulation runs for using `times(conway) <- 1:10`. These are known as still-lifes. Can you think of another four cell organism that will create a still-life?
 
-```{r 2017-04-30_population}
+```{r 2017-04-30-population}
 init(conway) <- m1
 times(conway) <- 1:100
 
@@ -167,7 +165,7 @@ We can visualise how simple rules can give rise to complexity ([The Blind Watchm
 
 Let's explore a [few more interesting examples](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) by specifying the starting cells that are alive. We create initial life by assigning those cells in a finite grid with values of one to be alive and zero if not. It is very difficult to predict what will happen and how long life will persist for in the grid making this a popular mathematical curio.  
 
-```{r 2017-04-30_glider}
+```{r 2017-04-30-glider}
 m2 <- matrix(0, 20, 20)
 m2[8:10, 8:10] <- 1
 m2[8, c(8, 10)] <- 0
@@ -224,7 +222,7 @@ petri_dish <- sim(bacteria,
 
 ### Exponential growth?
 
-```{r 2017-04-30_pop}
+```{r 2017-04-30-pop}
 population <- lapply(out(petri_dish), sum)
 
 population <- unlist(population)
@@ -237,7 +235,7 @@ I wonder what caused the plateau between thirteen and fifteen? Appears to be loc
 
 ### Initial
 
-```{r 2017-04-30_bacterium}
+```{r 2017-04-30-bacterium}
 heatmap(petri_dish@out[[1]], Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
 ```
 
@@ -245,7 +243,7 @@ heatmap(petri_dish@out[[1]], Rowv = NA, Colv = NA, col = c("white", "green"), sc
 
 Our new rules allow the cells to reproduce and fill their container (given enough time) but they are constrained from creating a green square by the rule that says being totally surrounded casuses death.  
 
-```{r 2017-04-30_bacteria}
+```{r 2017-04-30-bacteria}
 
 #  We inspect the final generation at 17 timesteps
 #  using the @out slot in the S4 object petri_dish
@@ -257,7 +255,7 @@ heatmap(petri_dish@out[[17]], Rowv = NA, Colv = NA, col = c("white", "green"), s
 
 We leave our Petri dish out next to a radiation source. The Petri dish is randomly struck by ionising radiation hitting some of our bacteria. We can use the matrix format of our simulated colony to easily simulate the effect of this event through matrix multiplication. 
 
-```{r 2017-04-30_accident}
+```{r 2017-04-30-accident}
 set.seed(255)
 
 #  Determine where radiation hit
