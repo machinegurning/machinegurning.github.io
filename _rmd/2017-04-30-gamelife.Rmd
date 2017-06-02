@@ -22,7 +22,7 @@ checkpoint::setSnapshot('2016-12-22')
 
 knitr::opts_chunk$set(
   echo = TRUE,
-  dev = "svg",
+  #dev = "svg",
   include = TRUE,
   message = FALSE,
   warning = FALSE,
@@ -141,7 +141,7 @@ plot(sim(conway), col = c("white", "green"), axes = FALSE)
 
 A strong and stable cellular formation that will persist. Re-read the rules to check you can see why and also extend the run of the simulation by changing how long the simulation runs for using `times(conway) <- 1:10`. These are known as still-lifes. Can you think of another four cell organism that will create a still-life?
 
-```{r 2017-04-30-population}
+```{r}
 init(conway) <- m1
 times(conway) <- 1:100
 
@@ -150,7 +150,7 @@ boring_block <- sim(conway)
 
 We can access the underlying data and check by summing each matrix what happens to the population; is the block stable?
 
-```{r}
+```{r 2017-04-30-population}
 population <- lapply(out(sim(conway)), sum)
 
 population <- unlist(population)
@@ -198,11 +198,33 @@ Try out other [gliders and spaceships](http://wwwhomes.uni-bielefeld.de/achim/mo
 
 In this part we will adapt the original life program to include some more realistic cellular behaviours and thus build more interesting agent based models from a biological point of view. A simple way to do this is to alter the values for the number of nearest neighbours affecting cell births and deaths.  
 
-We can assume that our bacteria are growing in a Petri dish and multiply asexually (no partners required). Each bacterium can grow as long as it is not completely surrounded. The bacteria form a [biofilm](https://en.wikipedia.org/wiki/Biofilm) that helps with their survival, a lonely bacterium will perish.    
+We can assume that our bacteria are growing in a Petri dish and multiply asexually (no partners required). Each bacterium can grow as long as it is not completely surrounded. The bacteria form a [biofilm](https://en.wikipedia.org/wiki/Biofilm) that helps with their survival, a lonely bacterium will perish.   
 
-```{r eval = TRUE}
+```{r}
 rm(conway)  #  clean the slate
-data(conway)  #  load fresh
+#  data(conway)  #  load fresh, uncomment this and run to get conway object
+```
+
+```{r echo = FALSE}
+conway <- new("gridModel",
+  main = function(time, init, parms) {
+    x      <- init
+    nb     <- eightneighbours(x)
+    surviv <- (x >  0 & (nb %in% parms$srv))
+    gener  <- (x == 0 & (nb %in% parms$gen))
+    x <- matrix((surviv + gener) > 0, nrow = nrow(init))
+    return(x)
+  },
+  parms  = list(srv = c(2, 3), gen = 3),
+  times  = 1:17,
+  init   = matrix(round(runif(1000)), ncol = 40),
+  solver = "iteration"
+)
+```
+
+
+```{r }
+
 # ?conway  #  remind yourself of what you need to change
 
 bacteria <- conway
@@ -222,7 +244,7 @@ petri_dish <- sim(bacteria,
 
 ### Exponential growth?
 
-```{r 2017-04-30-pop}
+```{r 2017-04-30-pop_pop}
 population <- lapply(out(petri_dish), sum)
 
 population <- unlist(population)
@@ -247,7 +269,11 @@ Our new rules allow the cells to reproduce and fill their container (given enoug
 
 #  We inspect the final generation at 17 timesteps
 #  using the @out slot in the S4 object petri_dish
-heatmap(petri_dish@out[[17]], Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
+heatmap(petri_dish@out[[17]] * 1,  # convert locial to numeric matrix, weird error
+        #  http://r.789695.n4.nabble.com/Changing-a-logical-matrix-into-a-numeric-matrix-td3206797.html
+        Rowv = NA, Colv = NA,
+        col = c("white", "green"),
+        scale = "none", labRow = FALSE, labCol = FALSE)
 
 ```
 
