@@ -286,15 +286,11 @@ Our new rules allow the cells to reproduce and fill their container (given enoug
 
 #  We inspect the final generation at 17 timesteps
 #  using the @out slot in the S4 object petri_dish
-# heatmap(petri_dish@out[[17]] * 1,  # convert locial to numeric matrix, weird error
-#         #  http://r.789695.n4.nabble.com/Changing-a-logical-matrix-into-a-numeric-matrix-td3206797.html
-#         Rowv = NA, Colv = NA,
-#         col = c("white", "green"),
-#         scale = "none", labRow = FALSE, labCol = FALSE)
 
 image(
   x = rotate(petri_dish@out[[17]]),
   col = c("white", "green"))
+
 
 ```
 
