@@ -1,0 +1,326 @@
+---
+title: "Agent Based Modelling"
+author: matt_gregory
+comments: yes
+date: '2017-04-30'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "The game of life"
+published: FALSE
+status: processed
+tags:
+- model
+- abm
+- agent based modelling
+- game of life
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+checkpoint::setSnapshot('2016-12-22')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+This blog post draws heavily on the excellent [SysMIC](https://sysmic.ac.uk/) course I completed during my PhD. 
+
+Agent based models (ABM) are one of a class of computational models for simulating the actions and interactions of autonomous agents (both individual or collective entities such as organizations or groups). The goal of ABM is to search for explanatory insight into the collective behavior of agents obeying simple rules, typically in natural systems. There are many ways to get hooked on ABM, for me I found the Game of Life intriguing (there are many examples from [biological](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3640333/), [ecological](https://www.openabm.org/book/3138/12-interesting-example-bali) and [socioeconomical systems](http://www.sciencedirect.com/science/article/pii/S2095263512000167)).  
+
+This blog post is interested in how from simple rules complexity can [emerge](https://en.wikipedia.org/wiki/Emergence).  
+
+## Conway's Game of Life
+
+[Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) (or the Game of Life) was introduced by the mathematician John Horton Conway in 1970. Though originally introduced to demonstrate interesting mathematical behaviour, we can consider it as a simple model for how cells interact. In this model time is discrete and represents generations. The cells lie on a rectangular grid. At each time step there are a set of rules that determine whether a cell lives or dies depending on the number of surrounding cells present. There is also the possibility that cells are `born'.  
+
+We provide a set of rules and conditions that leads to changes in the state of a variable. The changes are done in discrete steps and the variables only assume a finite number of discrete states. The simplest case is that a variable can be either "off"
+or "on" (0 or 1), i.e. a two-state model.  
+
+Before we proceed to give the rules of Life and a R implementation you should investigate it for yourself. The rules all depend on the eight nearest-neighbours of a cell.  
+
+* Go to the interactive Life game at http://www.julianpulgarin.com/canvaslife/  
+* Create some initial live cells by clicking on cells in the grid (black cells indicate cells that are alive).  
+* Click on Next Generation to see what happens at the next timestep.  
+* Turn the speed down to around 30. Then click on Start Life and Stop Life to start and stop the simulation.  
+* Experiment with different initial configurations and examine how the system evolves.  
+
+## A R implementation of Life
+
+The three rules of life are:
+
+* a cell dies if it has less than two or more than three nearest neighbours. This reflects under population ([Allee type effect](https://en.wikipedia.org/wiki/Allee_effect)) and over population respectively;  
+* a cell remains alive if it has two or three nearest neighbours;  
+* a cell is born in an empty grid space if it has three nearest neighbours.
+
+### Don't reinvent the wheel
+
+A quick Google search using the search term "cran package game of life" identified the `simecol` package as being potentially useful for exploring this problem (it is also useful practice to think about how you might code this problem yourself - look on [Github](https://github.com/) for other examples).   
+
+```{r}
+# I had some trouble with installing simecol on a mac
+# Follow this advice to get fortran installed (if you don't have Homebrew for mac: google it!)
+# https://stackoverflow.com/questions/23916219/os-x-package-installation-depends-on-gfortran-4-8
+require(simecol)
+# data("conway")
+```
+
+A nice feature of `simecol` that helps with its reproducibility and inspired some of my own package design is the construction of "all-in-one" model objects. That is, everything that defines one particular model, equations and data are stored together in one `simObj` (spoken: sim-Object). This package also holds simplicity over efficiency in its design principles as its target users (ecologists) often have limited programming experience.  
+
+This is facilitated by each simulation model being implemented as a S4 object (superclass simObj) with a number of customisable slots (see `?simecol`).
+
+```{r}
+# data("conway")
+
+conway <- new("gridModel",
+  main = function(time, init, parms) {
+    x      <- init
+    nb     <- eightneighbours(x)
+    surviv <- (x >  0 & (nb %in% parms$srv))
+    gener  <- (x == 0 & (nb %in% parms$gen))
+    x <- matrix((surviv + gener) > 0, nrow = nrow(init))
+    return(x)
+  },
+  parms  = list(srv = c(2, 3), gen = 3),
+  times  = 1:17,
+  init   = matrix(round(runif(1000)), ncol = 40),
+  solver = "iteration"
+)
+
+isS4(conway)
+
+```
+
+This simplicity is evident when looking at the default code for Conway's Game of Life shown above. The internal function `eightneighbours` returns the sum of the eight neighbours of a cell within a matrix. Look at the matrix `m1` and the output of `eightneighbours` when we pass it `m1` (as the argument `init` which normally defaults as random). If our 3 by 3 grid were subject to rules of life (refer to them again above) what would `m2` look like in the next generation?  
+
+```{r}
+m1 <- matrix(0, 10, 10)
+m1[5:6, 5:6] <- 1
+
+# 1 alive, 0 dead
+m1
+```
+
+We can use `heatmap` visualise the matrix (this had issues compiling so we opted for loading the `Matrix` package and using the `image` function).
+
+```{r 2017-04-30-m}
+library(Matrix)
+
+rotate <- function(x) t(apply(x, 2, rev))  #  custom function to plot matrix intuitively
+
+image(
+  x = rotate(m1),
+  col = c("white", "green"))
+
+# heatmap(m1, Rowv = NA, Colv = NA, col = c("white", "green"),
+#         scale = "none", labRow = FALSE, labCol = FALSE,
+#         margins = c(2, 2))
+
+```
+
+See how `eightneighbours` works?
+
+```{r}
+# numbers provide count of alive neighbours
+eightneighbours(m1)
+```
+
+(The complexity in `conway` is further hidden from the user by calling the `solver = "iteration"`, pointing towards another function in the `desolve` package (this package also contains General Solvers for Initial Value Problems of Ordinary Differential Equations)).  
+
+Let's check what happens to our Block described above in `m1` (note how the cells appear to be wider (x) than they are tall (y)).  
+
+```{r 2017-04-30-still_life}
+## test our expectations from above on larger grid
+
+init(conway) <- m1
+times(conway) <- 1:2
+still_life <- sim(conway)
+
+image(
+  x = rotate(still_life@out[[2]]),
+  col = c("white", "green"))
+```
+
+A strong and stable cellular formation that will persist. Re-read the rules to check you can see why and also extend the run of the simulation by changing how long the simulation runs for using `times(conway) <- 1:10`. These are known as still-lifes. Can you think of another four cell organism that will create a still-life?
+
+```{r}
+init(conway) <- m1
+times(conway) <- 1:100
+
+boring_block <- sim(conway)
+```
+
+We can access the underlying data and check by summing each matrix what happens to the population; is the block stable?
+
+```{r 2017-04-30-population}
+population <- lapply(out(sim(conway)), sum)
+
+population <- unlist(population)
+
+plot(population, type = "l", xlab = "Generation",
+     col = "green", lwd = 5)
+```
+
+## Playtime
+
+We can visualise how simple rules can give rise to complexity ([The Blind Watchmaker](https://en.wikipedia.org/wiki/The_Blind_Watchmaker)); like stumbling upon a pocket-watch found on a beach. 
+
+Let's explore a [few more interesting examples](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) by specifying the starting cells that are alive. We create initial life by assigning those cells in a finite grid with values of one to be alive and zero if not. It is very difficult to predict what will happen and how long life will persist for in the grid making this a popular mathematical curio.  
+
+```{r 2017-04-30-glider}
+m2 <- matrix(0, 20, 20)
+m2[8:10, 8:10] <- 1
+m2[8, c(8, 10)] <- 0
+m2[9, c(9, 10)] <- 0
+
+# 1 alive, 0 dead
+# heatmap(m2, Rowv = NA, Colv = NA, col = c("white", "green"),
+#         scale = "none", labRow = FALSE, labCol = FALSE,
+#         margins = c(2, 2))
+
+image(
+  x = rotate(m2),
+  col = c("white", "green"))
+```
+
+### Spontaneous appeared Spaceships out of Random Dust
+
+Run this code after uncommenting `glider` (fly my pretty).
+
+```{r}
+# Copy and paste into R
+init(conway) <- m2
+times(conway) <- 1:15
+
+# glider <- sim(conway, animate = TRUE, delay = 100, 
+#   col=c("white", "green"), axes = FALSE)
+
+# glider
+```
+
+Try out other [gliders and spaceships](http://wwwhomes.uni-bielefeld.de/achim/moving.html).  
+
+## Back to reality
+
+In this part we will adapt the original life program to include some more realistic cellular behaviours and thus build more interesting agent based models from a biological point of view. A simple way to do this is to alter the values for the number of nearest neighbours affecting cell births and deaths.  
+
+We can assume that our bacteria are growing in a Petri dish and multiply asexually (no partners required). Each bacterium can grow as long as it is not completely surrounded. The bacteria form a [biofilm](https://en.wikipedia.org/wiki/Biofilm) that helps with their survival, a lonely bacterium will perish.   
+
+```{r}
+rm(conway)  #  clean the slate
+#  data(conway)  #  load fresh, uncomment this and run to get conway object
+```
+
+```{r echo = FALSE}
+conway <- new("gridModel",
+  main = function(time, init, parms) {
+    x      <- init
+    nb     <- eightneighbours(x)
+    surviv <- (x >  0 & (nb %in% parms$srv))
+    gener  <- (x == 0 & (nb %in% parms$gen))
+    x <- matrix((surviv + gener) > 0, nrow = nrow(init))
+    return(x)
+  },
+  parms  = list(srv = c(2, 3), gen = 3),
+  times  = 1:17,
+  init   = matrix(round(runif(1000)), ncol = 40),
+  solver = "iteration"
+)
+```
+
+
+```{r }
+
+# ?conway  #  remind yourself of what you need to change
+
+bacteria <- conway
+parms(bacteria) <- list(srv = c(3, 4, 5, 6, 7),
+                        gen = c(1, 2, 3, 4))  #  change rules
+
+## a lonely bacterium on a manageable Petri dish
+m <- matrix(0, 50, 50)
+m[13, 37] <- 1
+init(bacteria) <- m
+
+
+petri_dish <- sim(bacteria,
+                  col = c("white", "green"), axes = FALSE)
+
+```
+
+### Exponential growth?
+
+```{r 2017-04-30-pop_pop}
+population <- lapply(out(petri_dish), sum)
+
+population <- unlist(population)
+
+plot(population, type = "p", xlab = "Generation",
+     col = "green", lwd = 3, pch = 21)
+```
+
+I wonder what caused the plateau between thirteen and fifteen? Appears to be localised to the bottom of the Petri dish where the bacteria are wiped out from overcrowding. This is probably due to edge effects of the Petri dish container and the off-centre start position of the first bacterium shown below.    
+
+### Initial
+
+```{r 2017-04-30-bacterium}
+# heatmap(petri_dish@out[[1]], Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
+
+image(
+  x = rotate(petri_dish@out[[1]]),
+  col = c("white", "green"))
+```
+
+### Seventeen
+
+Our new rules allow the cells to reproduce and fill their container (given enough time) but they are constrained from creating a green square by the rule that says being totally surrounded casuses death.  
+
+```{r 2017-04-30-bacteria}
+
+#  We inspect the final generation at 17 timesteps
+#  using the @out slot in the S4 object petri_dish
+
+image(
+  x = rotate(petri_dish@out[[17]]),
+  col = c("white", "green"))
+
+
+```
+
+### An accident
+
+We leave our Petri dish out next to a radiation source. The Petri dish is randomly struck by ionising radiation hitting some of our bacteria. We can use the matrix format of our simulated colony to easily simulate the effect of this event through matrix multiplication. 
+
+```{r 2017-04-30-accident}
+set.seed(255)
+
+#  Determine where radiation hit
+#  50% chance it hit any particular cell within the Petri
+#  Independent of whether the cell had a bacterium or not
+
+radiation <- matrix(sample(c(0, 1), 2500, replace = TRUE),
+                    50, 50)
+
+#  Accidents happen
+woops <- petri_dish@out[[17]] * radiation
+
+# heatmap(woops, Rowv = NA, Colv = NA, col = c("white", "green"), scale = "none", labRow = FALSE, labCol = FALSE)
+
+image(
+  x = rotate(woops),
+  col = c("white", "green"))
+```
+
+> Ever since its publication, Conway's Game of Life has attracted much interest, because of the surprising ways in which the patterns can evolve. Life provides an example of emergence and self-organization. It is interesting for computer scientists, physicists, biologists, biochemists, economists, mathematicians, philosophers, generative scientists and others to observe the way that complex patterns can emerge from the implementation of very simple rules.  The game can also serve as a didactic analogy, used to convey the somewhat counter-intuitive notion that "design" and "organization" can spontaneously emerge in the absence of a designer. - [Wikipedia](https://en.wikipedia.org/wiki/Conway's_Game_of_Life)  
+
+```{r}
+sessionInfo()
+```
+
