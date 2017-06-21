@@ -1,0 +1,100 @@
+
+---
+title: "When to water your plants"
+author: matt_upson
+comments: yes
+date: '2017-05-24'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "IoT style soil moisture sensing"
+published: FALSE
+status: draft
+tags:
+- sensors
+- IoT
+- raspberry pi
+- docker
+- mqtt
+- esp8266
+categories: IoT
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+```{r}
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+
+soil1 <- '../data/2017-05-24-soil_equilibrium.csv' %>%
+  read_csv
+
+soil1 %>% 
+  dplyr::filter(
+    timestamp > '2017-05-23'
+    ) %>%
+  ggplot + 
+  aes(
+    x = timestamp,
+    y = mV,
+    colour = topic
+    ) +
+  geom_line()
+  
+
+soil1$topic %>% unique
+
+```
+
+```{r}
+
+soil4 <- '../data/2017-05-24-soil_equilibrium4.csv' %>%
+  read_csv
+
+soil4 %>% 
+  dplyr::filter(
+    value < 1000, 
+    value > 0,
+    !(topic == "tele/soil/pot0/temp0" & value > 80)
+    ) %>%
+  ggplot +
+  aes(
+    x = timestamp,
+    y = value,
+    colour = topic
+    ) + 
+  facet_wrap(
+    ~topic, 
+    scales = 'free_y',
+    ncol = 1
+    ) +
+  geom_line() + 
+  theme(
+    legend.position = 'none'
+    )
+  
+
+soil1$topic %>% unique
+
+```
+
+```{r}
+sessionInfo()
+```
