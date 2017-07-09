@@ -69,7 +69,7 @@ For you to be reading this esoteric blog, you are probably aware of the Gambler'
 * 8 + 45 = 53 H
 * 2 + 45 = 47 T
 
-This isn't that different to 50:50, how can we test whether we need to reject the null hypothesis of 50 H and 50 T for the above experiment? Do we have sufficient statistical power to elucidate this problem? What happens if we scale the problem, are we better or worse at using our gut to solve these problems? This is where [inferential statistics](https://en.wikipedia.org/wiki/Statistical_inference) comes in handy and let's us know when a difference between data is larger than might be expected by chance alone.  
+This isn't that different to 50:50, how can we test whether we need to reject the null hypothesis of 50 H and 50 T for the above experiment? Do we have sufficient statistical power to elucidate this problem? What happens if we scale the problem, are we better or worse at using our gut to solve these problems? This is where [inferential statistics](https://en.wikipedia.org/wiki/Statistical_inference) comes in handy and lets us know when a difference between data is larger than might be expected by chance alone.  
 
 ## A Victorian version of the Pepsi Challenge
 
@@ -79,9 +79,9 @@ An interesting tangent that uses a Lady's gut to solve a problem; consider Fishe
 ?fisher.test()
 ```
 
-A British woman claimed to be able to distinguish whether milk or tea was added to the cup first.  To test, she was given eight randomly ordered cups of tea, in four of which milk was added first. She was to select the 4 cups prepared by one method, given her an advantage of comparison.  
+A British woman claimed to be able to distinguish whether milk or tea was added to the cup first.  To test, she was given eight randomly ordered cups of tea, in four of which milk was added first. She was to select the 4 cups prepared by one method, giving her an advantage of comparison.  
 
-The null hypothesis is that there is no association between the true order of pouring and the woman's guess, the alternative that there is a positive association (that the [odds ratio](https://en.wikipedia.org/wiki/Odds_ratio) is greater than 1). Whatever the outcome (I prefer the story where she gets them all correct), it's a memorable story that frames the statistical process of hypothesis testing as a permutation test; it's readily interpretable.  
+The null hypothesis is that there is no association between the true order of pouring and the woman's guess, the alternative that there is a positive association (that the [odds ratio](https://en.wikipedia.org/wiki/odds_ratio) is greater than 1). Whatever the outcome (I prefer the story where she gets them all correct), it's a memorable story that frames the statistical process of hypothesis testing as a permutation test; it's readily interpretable.  
 
 Note, how as this was prior to the [Neyman-Pearson](https://en.wikipedia.org/wiki/Neyman%E2%80%93Pearson_lemma) method, Fisher gives no alternative hypothesis.  
 
@@ -143,7 +143,7 @@ suppressWarnings(
 
 ```
 
-However, Pearson's Chi-squared test provides a different p-value, that's because it's a different test and method (it performs poorly when any margin totals sum to zero or with small samples, as we have here). Performing the appropriate statistical test can be Tea-testing! It's better to plan your experiment and analysis beforehand.    
+However, Pearson's Chi-squared test provides a different p-value, that's because it's a different test and method (it performs poorly when any marginal totals sum to zero or with small samples, as we have here). Performing the appropriate statistical test can be Tea-testing! It's better to plan your experiment and analysis beforehand.    
 
 ## Traditional statistics
 
@@ -255,9 +255,11 @@ p_h4ckz0r <- function(ap, bp, n, alpha = 0.05, seed = 1337) {
   # p is the probability of success
   # q is the probability of failure
       # create empty list to hold data
-    p_values <- data.frame("p" =  rep(0, n),
-    "number_of_users_per_page" = rep(0, n),
-    "reject_h0" = as.logical(rep(0, n)))
+    p_values <- data.frame(
+        "p" =  rep(0, n),
+        "number_of_users_per_page" = rep(0, n),
+        "reject_h0" = as.logical(rep(0, n))
+        )
   
     
   for (i in 1:n) {
@@ -324,7 +326,7 @@ p_h4ckz0r(ap = 0.1, bp = 0.2,
           seed = 255)
 ```
 
-Here we a situation where the p-value weaves in and out of significance. What would happen if your stopping rule was at `n = 100` (that's why it's important to do power analysis beforehand as it tells you what n needs to be to limit this risk)?
+Here we see a situation where the p-value weaves in and out of significance. What would happen if your stopping rule was at `n = 100` (that's why it's important to do power analysis beforehand as it tells you what n needs to be to limit this risk)?
 
 What about if our CTR for each page are identical?  
 
@@ -404,7 +406,7 @@ Which do you chose?
 
 On average, you should switch - really, you should.  
 
-According to the comprehensive [Wikipedia page](https://en.wikipedia.org/wiki/Monty_Hall_problem) on this problem, even pigeons learn to cope with this problem than humans. With people writing and complaining and rejecting logical and mathematical solutions to the problem. Sometimes our inference machine can let us down.  
+According to the comprehensive [Wikipedia page](https://en.wikipedia.org/wiki/Monty_Hall_problem) on this problem, even pigeons learn to cope with this problem better than humans. With people writing and complaining and rejecting logical and mathematical solutions to the problem. Sometimes our inference machine can let us down.  
 
 ### The solution
 
@@ -482,7 +484,7 @@ We quote the `bayesAB` [package vignette](http://fportman.com/blog/bayesab-a-new
 
 The Bayesian approach provides a context of prior belief, which attempts to capture what we know about the world or the problem we are working on. For example in my publication (Gregory et al., 2016), I used the Bayesian approach to estimate the probability of success of an experiment that had hitherto not been attempted. The Frequentist philosophy struggles with these kinds of problems.  
 
-Your prior beliefs are encapsulated by the distribution of a random variable over which we believe our parameter to lie. In the context of A / B testing, as you expose groups to different tests, you collect the data and combine it with the prior to get the posteriors distribution over the parameter(s) in question. Your data updates your prior belief.    
+Your prior beliefs are encapsulated by the distribution of a random variable over which we believe our parameter to lie. In the context of A / B testing, as you expose groups to different tests, you collect the data and combine it with the prior to get the posterior distribution over the parameter(s) in question. Your data updates your prior belief.    
 
 \[
 p(parameter\ |\ data) = \frac{p(data\ |\ parameter)}{p(data)}
