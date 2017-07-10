@@ -1,0 +1,647 @@
+---
+title: "Mastering Bayes"
+author: matt_gregory
+comments: yes
+date: '2017-06-18'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Are you Frequently A / B testing?"
+published: FALSE
+status: processed
+tags:
+ - hypothesis
+ - inference
+ - a b
+ - a b testing
+ - Bayesian
+ - Frequentist
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+checkpoint::setSnapshot('2016-12-22')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+The mind of *Homo sapiens* is an [inference machine](https://en.wikipedia.org/wiki/Computational_theory_of_mind). The visual inputs of a darkening sky and distant sound of thunder, combined with the the internal state of your brain (memory), leads to the inevitable output of you taking your umbrella with you.  
+
+However, sometimes our [minds lets us down](http://www.badscience.net/2007/04/no-seriously-i-felt-the-p-values-in-my-soul/).  
+
+## Objective
+
+This blog post considers some common malfunctions in our reasoning by using some toy examples where statistics can help and then moves on to the modern problem of deciding which web page is better at increasing the outcome of interest (e.g. [advert clicks](http://thefirstbannerad.com/)); [page A or page B](https://en.wikipedia.org/wiki/A/B_testing)?  
+
+## [Toin coss](https://en.wikipedia.org/wiki/Talk%3ASpoonerism#Toin_Coss.3F) experiment
+
+Consider the following:
+
+* I plan to toss a fair coin a total of 100 times.
+* After 10 tosses we have 8 Heads (H) and 2 Tails (T).
+
+What is the total number of Tails we expect to get by the end of the experiment? (For N = 100, where N is the number of trials in the experiment).
+
+\[
+\begin{eqnarray}
+p(Heads) = p(Tails) = 0.5 = 1/2
+\end{eqnarray}
+\]
+
+Take a moment and think.  
+
+## Gambler's fallacy
+
+For 100 coin tosses you might expect 50 Tails. This expectation that things will even themselves out is such a common misconception in humans it has a name; the [Gambler's fallacy](https://en.wikipedia.org/wiki/Gambler%27s_fallacy). Because we got more Heads in the first 10 tosses we will get fewer Heads in the next 90 tosses... In situations where what is being observed is truly random (i.e., independent trials of a random process), this belief, though appealing to the human mind, is false.  
+
+## Additional information
+
+For you to be reading this esoteric blog, you are probably aware of the Gambler's fallacy and provided a different answer. Knowing that the first 10 tosses gave 8 H and 2 T, combined with the assumption that every toss is independent, you simply add half of the remaining tosses to H and half to T. 
+
+* 8 + 45 = 53 H
+* 2 + 45 = 47 T
+
+This isn't that different to 50:50, how can we test whether we need to reject the null hypothesis of 50 H and 50 T for the above experiment? Do we have sufficient statistical power to elucidate this problem? What happens if we scale the problem, are we better or worse at using our gut to solve these problems? This is where [inferential statistics](https://en.wikipedia.org/wiki/Statistical_inference) comes in handy and lets us know when a difference between data is larger than might be expected by chance alone.  
+
+## A Victorian version of the Pepsi Challenge
+
+An interesting tangent that uses a Lady's gut to solve a problem; consider Fisher's Tea Drinker. Versions of the story vary see [Wikipedia](https://en.wikipedia.org/wiki/Lady_tasting_tea) or the R help which is referenced to Agresti (1990).
+
+```{r eval = FALSE}
+?fisher.test()
+```
+
+A British woman claimed to be able to distinguish whether milk or tea was added to the cup first.  To test, she was given eight randomly ordered cups of tea, in four of which milk was added first. She was to select the 4 cups prepared by one method, giving her an advantage of comparison.  
+
+The null hypothesis is that there is no association between the true order of pouring and the woman's guess, the alternative that there is a positive association (that the [odds ratio](https://en.wikipedia.org/wiki/odds_ratio) is greater than 1). Whatever the outcome (I prefer the story where she gets them all correct), it's a memorable story that frames the statistical process of hypothesis testing as a permutation test; it's readily interpretable.  
+
+Note, how as this was prior to the [Neyman-Pearson](https://en.wikipedia.org/wiki/Neyman%E2%80%93Pearson_lemma) method, Fisher gives no alternative hypothesis.  
+
+### Agresti gives
+
+```{r}
+TeaTasting <-
+matrix(c(3, 1, 1, 3),
+       nrow = 2,
+       dimnames = list(Guess = c("Milk", "Tea"),
+                       Truth = c("Milk", "Tea")))
+TeaTasting
+
+fisher.test(TeaTasting, alternative = "greater")
+```
+
+In this case as p > 0.05, an association could not be established. We fail to reject the null hypothesis given the data.
+
+For an accessible discussion of the p-value and why "The Earth is Round (p < .05)" see [Cohen (1994)](http://ist-socrates.berkeley.edu/~maccoun/PP279_Cohen1.pdf).
+
+### Wikipedia reference says all correct!
+
+However, if we repeated the experiment in a parallel universe and the Lady got them all correct, as cited from the Wikipedia reference (Salburg, 2002)...  
+
+Again, the test statistic was a simple count of the number of successes in selecting the 4 cups. The null hypothesis distribution was computed by the number of permutations. The number of selected permutations equaled the number of unselected permutations. Using a combination formula, with n=8 total cups and k=4 cups chosen, we show there are 70 combinations.  
+
+\[
+\frac{8!}{4!(8 - 4)!}
+\]
+
+Thus, if the women guesses all correct, then that's a 1 in 70 chance. Or a p-value of...
+
+```{r}
+(1 / 70)
+```
+
+
+Or using Fisher's test in R:
+
+```{r}
+TeaTasting2 <-
+matrix(c(4, 0, 0, 4),
+       nrow = 2,
+       dimnames = list(Guess = c("Milk", "Tea"),
+                       Truth = c("Milk", "Tea")))
+TeaTasting2
+
+suppressWarnings(
+  fisher.test(TeaTasting2, alternative = "greater")
+) 
+```
+
+We can also use chi-squared test if we feel like it (different test, same data). You may remember from your A-level Biology classes of manually calculating the chi-squared test statistic. Essentially you are comparing the difference between the observed and expected while controlling for the degrees of freedom and the number of trials.  
+
+```{r}
+suppressWarnings(
+  chisq.test(TeaTasting2)
+)
+
+```
+
+However, Pearson's Chi-squared test provides a different p-value, that's because it's a different test and method (it performs poorly when any marginal totals sum to zero or with small samples, as we have here). Performing the appropriate statistical test can be Tea-testing! It's better to plan your experiment and analysis beforehand.    
+
+## Traditional statistics
+
+These examples above are probably familiar to most readers and represent the frequentist school of thinking which contributed to massive progress for statistics and science in the twentieth century.  
+
+For [Frequentist statistics](https://en.wikipedia.org/wiki/Frequentist_inference), the parameters of a data generating distribution are set and we attempt to infer the value of these parameters by inspecting the data which are randomly generated by those distributions / parameters.  
+
+Let's look at how we can use Frequentist statistics to solve the modern problem of deciding which web page is better, A or B?  
+
+## Frequentist A / B Testing
+
+Suppose our lead content designer has identified problems with our landing page (page A). They create a new, possibly better page based on this hunch (page B). We as, data scientists, want to measure which page is better, using data and statistics.   
+
+Our users, are randomly assigned what page they land on, either A or B. They then either click through to where we want them to go, or they do not. The average click-through-rate (CTR) is calculated for each page by adding the number of success and dividing by the number of unique users visiting the page (number of trials). This is usually converted to a percentage by multiplying by 100.  
+
+### Just pick the higher rate?
+
+CAVEAT: this is for illustration purposes, the analysis you intend to use should be declared before the experiment to protect yourself from fudging and [p-value hacking](http://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1002106) shenanigans. Furthermore, your effect size is likely to be much smaller (the relative difference in CTR between pages if real).    
+
+Imagine we have 10 trials per page, where the CTR:
+
+\[
+A = \frac{1}{10} \\
+\\
+B = \frac{2}{10} \\
+\]
+
+Surely A is better than B? Hmm, we recall the concept of variation and confidence intervals which makes us concerned about accepting that page B is better, what if this were a fluke due to the vagaries of chance?  
+
+We would feel more confident if we had more trials, right?
+
+\[
+A = \frac{10}{100} \\
+\\
+B = \frac{20}{100} \\
+\]
+
+Or
+
+```{r}
+pageTest <-
+matrix(c(10, 20, 90, 80),
+       nrow = 2,
+       dimnames = list(Page = c("A", "B"),
+                       Clicked = c("Click", "No click")))
+
+pageTest
+```
+
+This data is interesting as for each trial there is either a success or a failure (click or no click). This suggests a Bernoulli distribution may be better than a Gaussian as our generative distribution for the data (it's zeroes and ones).
+
+NOTE: see [Wikipedia](https://en.wikipedia.org/wiki/A/B_testing#Common_test_statistics) for help in picking an assumed generative distribution for your experimental data and the associated test.  
+
+### How do we quantify this?  
+
+By using statistical significance testing; is the difference in CRT between pages statistically significant?  
+
+At this point we should clarify our question by deciding upon our significance level, $\alpha = 0.05$. Interestingly, $\alpha$ is also the exact probability of our rejecting the null hypothesis when it is true (we falsely believe that there is a difference in CRT for the pages). 
+
+Thus, we ask, is the difference in CRT between pages statistically significant at significance level $\alpha$?  
+
+$$H0 : \mu A = \mu B$$
+
+Our alternative hypothesis is two-sided as we acknowledge that our page may have been made worse. It is ethical to consider this and be able to detect inferior performance (like comparing a new medicine to the current gold standard).  
+
+$$H1 : \mu A \neq \mu B$$
+```{r}
+chisq.test(pageTest)
+```
+
+Or in [Python](https://github.com/lazyprogrammer/machine_learning_examples/blob/master/ab_testing/chisquare.py)?
+
+Is p < $\alpha$?
+
+We fail to reject the null hypothesis given the data. Damn, no significance! Can't we just keep running the experiment a little bit longer to see if we can reach significance?  
+
+This is dodgy ground and known as p-value hacking (Head *et al*., 2015). That's why it's important to write your experimental and analytical design down and declare it to your colleagues beforehand, thus mitigating this kind of temptation.  
+
+### p value hacking
+
+Why is it inappropriate to peek at our p-value during the experiment? Surely page B will either be better or it won't, aren't we being a bit over the top?  
+
+Let's repeat a similar experiment to above but peek at the p-value frequently so we can ensure to stop when we get the answer we want; the one that matches our beliefs and assumptions (i.e. that my new page design is awesome!) (this is p-value hacking and is not cool).  
+
+We write a function that demonstrates p-hacking for us (see the code comments for help). This is why R is awesome and why simulation is very useful for helping you to understand statistics. You could use this could for rough-and-ready power analysis if your feel confident.  
+
+The logic of the function is sort-of like this:
+
+* Simulate CTR for pages A and B as series of `n` Bernoulli trials by random generation for the binomial distribution with the parameter probability of success (CTR when presented with the pages A or B).  
+* For each page we expose it to `n` users (A gets `n` visitors so does B).  
+* Do a chi-squared test and plot the p-value as we accumulate data, one by one (thus we are peeking rather than using an agreed stopping rule).  
+* We use `set.seed` in the for loop to make it reproducible.  
+* Plot the p-values against number of users (we peek at the p-value after every unique user is tested).  
+
+NOTE: this is not the optimal way to set-up the code but I wanted it to be clear and thinking hurts. We also suppress warnings for `chi.sqtest` as it complains when `n` is small.   
+
+```{r}
+#  a user clicking is called a click, a user not clicking a nick (based on spam and ham for email classification problems)
+
+p_h4ckz0r <- function(ap, bp, n, alpha = 0.05, seed = 1337) {
+  # ap, CTR for page A
+  # bp, CTR for page B
+  # number of trials
+  # alpha is our significance level, probability of rejecting H0 when it's true
+  # seed, run in a different universe or the same one
+  
+  # run individual experiment given
+  # the mean CTR of page A (ap) and B (bp)
+  # p is the probability of success
+  # q is the probability of failure
+      # create empty list to hold data
+    p_values <- data.frame(
+        "p" =  rep(0, n),
+        "number_of_users_per_page" = rep(0, n),
+        "reject_h0" = as.logical(rep(0, n))
+        )
+  
+    
+  for (i in 1:n) {
+  
+  # make it reproducible, as we loop through
+  set.seed(seed = seed)
+    
+  a_click <- sum(rbinom(i, 1, ap))
+  b_click <- sum(rbinom(i, 1, bp))
+  a_nick <- i - a_click
+  b_nick <- i - b_click
+  
+  # create a 2 by 2 contingency table to pass
+  # to chi.qstest
+  pageTest <-
+matrix(c(a_click, b_click, a_nick, b_nick),
+       nrow = 2,
+       dimnames = list(Page = c("A", "B"),
+                       Clicked = c("Click", "No click")))
+
+  # print(pageTest)
+
+# store p-values
+p_values[i, "p"] <- suppressWarnings(chisq.test(pageTest)$p.value) 
+# store n
+p_values[i, "number_of_users_per_page"] <- i
+# accept or reject
+p_values[i, "reject_h0"] <- as.integer(p_values[i, "p"] < alpha)
+
+  }
+
+#print(tail(p_values, 100))
+      
+plot(y = p_values$p, x = p_values$n,
+           type = "l",
+           xlab = "Number of users visiting each page (n)",
+           ylab = "p-value",
+           col = "blue")
+
+abline(h = alpha, col = "red")  # significance level
+
+}
+
+
+```
+
+We then run our function using the same inputs as from the experiment above where unbeknownst to us the CTR for page A is 0.1 and for page B is 0.2. Let's imagine we ran it over the course of two weeks and kept peeking at the p-values as we go (we magically end up with the exact number of visitors randomly assigned to page A or B). We specified beforehand that we are working with $\alpha$ set to 0.05.   
+
+As we collect more data we see that the p-value begins to creep towards $\alpha$. However, this is a somewhat wiggly line. This scenario is quite straightforward as peeking early would not be too detrimental, except around 450 where `p` creeps above `alpha` briefly.
+
+```{r 2017-06-18_hack1}
+p_h4ckz0r(ap = 0.1, bp = 0.2,
+          n = 500,
+          alpha = 0.05,
+          seed = 1337)
+```
+
+If we ran this experiment again or in a different universe, a different scenario likely would arise, we do that here by specifying a different random seed which affects the Bernoulli trials we generate using `rbinom`.  
+
+```{r 2017-06-18_hack2}
+p_h4ckz0r(ap = 0.1, bp = 0.2,
+          n = 500,
+          alpha = 0.05,
+          seed = 255)
+```
+
+Here we see a situation where the p-value weaves in and out of significance. What would happen if your stopping rule was at `n = 100` (that's why it's important to do power analysis beforehand as it tells you what n needs to be to limit this risk)?
+
+What about if our CTR for each page are identical?  
+
+```{r 2017-06-18_hack3}
+
+p_h4ckz0r(ap = 0.1, bp = 0.1,
+          n = 200,
+          alpha = 0.05,
+          seed = 37)
+```
+
+Here we see the importance of not peeking. Prior to the experiment you should have done a power analysis to determine what was as a suitable sample size to detect an effect size of your specification given your $\alpha$. Otherwise, by peeking around 80 trials for each you might get the false impression that page B is better than A, thus falsely rejecting the null hypothesis. You'll then have this page artifact that doesn't add any value, yet you have a p-value to support the inclusion of it - like the vestigial hip bone of a whale (although at least that was useful once). Thus, you begin to accrue a bunch of junk.    
+
+The same principle holds for clinical trials.
+
+### The p-value interpretation
+
+Wikipedia defines a [p-value](https://en.wikipedia.org/wiki/P-value) as follows:
+
+> The p-value or probability value is the probability for a given statistical model that, when the null hypothesis is true, the statistical summary (such as the sample mean difference between two compared groups) would be the same as or more extreme than the actual observed results.  
+
+If we rephrase that in the context of our example, if the difference for CTR for page A and B is very large, then the Chi-square statistic will be large (controlling for `n`), thus p will be small. If p is below $\alpha$, we can say that the difference is statistically significant and we can reject the null hypothesis of no difference. If p is greater than $\alpha$, it means we can't reject the null hypothesis with the data we collected (it does NOT mean the null hypothesis is true).  
+
+### Statistical significance is not the same as real world significance
+
+Typical numbers you see for CTR might be single digits or tens of percent (e.g. 1% CTR or 10% CTR, depending on the context). Differences between groups or the effect size between page A and B can be small (1%, 0.1% or 0.01%), so why bother?  
+
+The analysis doesn't end with the p-value. Why not do a break-even analysis to work out whether its worth the effort by adding a currency value estimate, as below.  
+
+```{r}
+# lots of visitors means small improvements can mean many more happy customers, or higher CTR!
+number_visitors_per_day <- 1e6
+
+# quantify the value of a succesful Click through
+pounds_per_CTR <- 15.45 # pounds
+
+# 1% CTR
+pageA <- 0.01
+
+daily_earnings_pageA <- number_visitors_per_day * pageA * pounds_per_CTR
+
+# effect size improvement, for page B over page A
+effect_size <- 0.001
+
+daily_earnings_pageB <- number_visitors_per_day * (pageA + effect_size) * pounds_per_CTR
+
+cat("Using page B will earn you an extra £",
+    daily_earnings_pageB - daily_earnings_pageA, "per day.")
+
+```
+
+Is it worth the effort? Asking questions like these quantifies real world value of any page changes you may want to make given the data.  
+
+> The numbers are where the scientific discussion should start, not end. (Nuzzo, 2014)
+
+## Traditional A / B Testing Summary
+
+* It's confusing, even for professional data scientists, making it hard to communicate with non-data scientist.   
+* First: define null hypothesis and alternative hypothesis.  
+* Define experiment and analysis beforehand, using power analysis to help decide on stopping conditions.  
+* Result of test: reject null hypothesis or do not reject it.  
+* Failing to reject the null hypothesis is not the same as accepting it (perhaps you need more data).  
+* If the [variance](https://en.wikipedia.org/wiki/Variance) is large, or the [effect size](https://en.wikipedia.org/wiki/Effect_size)(i.e. the smallest difference in CTR (10%, 5% or 1%?)) you want to detect is small you'll need more data.  
+* More data gives greater statistical power.  
+
+## The [Monty Hall problem](https://en.wikipedia.org/wiki/Monty_Hall_problem)
+
+Here's a another problem, again from the twentieth century; a problem which our stubborn mind can struggle to believe. We use this to introduce an orthogonal approach to Frequentist statistics.    
+
+> Suppose you're on a game show, and you're given the choice of three doors: Behind one door is a car; behind the others, goats. You pick a door, say No. 1, and the host, who knows what's behind the doors, opens another door, say No. 3, which has a goat. He then says to you, "Do you want to pick door No. 2?" Is it to your advantage to switch your choice? - (Whitaker, 1990, as quoted by vos Savant 1990a)
+
+1. You pick a door (you don't get to see what's behind it) (door #1)  
+2. Monty Hall opens a door you didn't pick, reveals a goat (door #2)  
+3. You are given a choice: stay with door #1, or switch to door #3  
+
+Which do you chose?  
+
+On average, you should switch - really, you should.  
+
+According to the comprehensive [Wikipedia page](https://en.wikipedia.org/wiki/Monty_Hall_problem) on this problem, even pigeons learn to cope with this problem better than humans. With people writing and complaining and rejecting logical and mathematical solutions to the problem. Sometimes our inference machine can let us down.  
+
+### The solution
+
+We provide a brief solution here given some Bayesian thinking and based on the [Lazy programmer course](https://www.udemy.com/bayesian-machine-learning-in-python-ab-testing/learn/v4/overview) course.  
+
+* Assume we choose door #1 (each probability is conditioned on this) and `C = ?` tell us which door the car really is behind...  
+
+Initially, the probability of (p):  
+
+\[
+\begin{eqnarray}
+p(C = 1) = p(C = 2) = p(C = 3) = 1/3
+\end{eqnarray}
+\]
+
+* If `H =` door that Monty Hall opens  
+* Assume he opens door #2 (it doesn't really matter as the problem is symmetric).  
+
+Then, thinking about the probabilities (Monty Hall can't open your door, nor can he reveal where the car really is, he has to show a goat):  
+
+\[
+\begin{eqnarray}
+p(C = 1) = 0.5 \\
+p(C = 2) = 0 \\
+p(C = 3) = 1 \\
+\end{eqnarray}
+\]
+
+What probability do we actually want? Stick or twist... (where H is what door Monty Hall reveals has a goat).  
+
+\[
+\begin{eqnarray}
+p(C = 1\ |\ H = 2), \\
+p(C = 3\ |\ H = 2) \\
+\end{eqnarray}
+\]
+
+Now for Bayes rule... (read the pipe as "given")
+
+\[
+p(C = 3 | H = 2) =
+\]
+
+The probability of the Car being behind door number 3 given Monty Hall shows there's a goat behind door number 2 (and we've already picked door number one).  
+
+\[
+\frac{p(H = 2 | C = 3) p(C = 3)}{[p(H = 2 | C = 1)p(C = 1) + p(H = 2 | C = 2)p(C = 2) + p(H = 2 | C = 3)p(C = 3)]}
+\]
+
+\[
+= p(C = 3 | H = 2) = 1 * (1/3)\ / \ (1/2 \ * \ 1/3 \ + 0 \ * \ 1/3 \ + 1 \ * \ 1/3) = 2/3
+\]
+
+Therefore we should always switch! (Not switching p given by, 1 - 2/3 = 1/3)  
+
+## Bayes
+
+Reverand Thomas Bayes first provided an equation that allows new evidence to update beliefs in the 1700s. His early work paved the way for the development of a very different and orthogonal approach to frequentist statistics. These methods further contrast to the hypothesis testing of the Frequentist statistical approach developed by Fisher, Pearson and Neyman.  
+
+Bayesian methods are better aligned with how we think about the world; being readily interpretable. This contrasts with the language used in frequentist statistics where we are likely to be misunderstood by non-scientists due to our reliance on p-values and their counter-intuitive definition. There are other reasons to prefer Bayes method which we do not explore here.     
+
+At its heart, Bayesian inference is effectively an application of Bayes theorem. In many ways it is about what you do with a test's result, rather than something you use instead of a test. Bayesian inference enables you to choose between a set of mutually-exclusive explanations, or to quantify belief. Assuming you are not interested in an algebraic ['proof' of this theorem](https://en.wikipedia.org/wiki/Bayes%27_theorem), we proceed.  
+
+For another situation, predicting rates of rare events, where the Bayesian approach was preferred to Frequentist see my [open paper](http://onlinelibrary.wiley.com/doi/10.1111/imb.12220/abstract) (Gregory *et al.*, 2016)(see Supplementary 5.1.3 of the paper for Bayesian methods to produce a posterior probability distribution for the transformation efficiency of a species).  
+
+## Bayes A/B testing in R
+
+```{r message=FALSE}
+library(bayesAB)
+```
+
+We quote the `bayesAB` [package vignette](http://fportman.com/blog/bayesab-a-new-r-package-for-bayesian-ab-testing/) to kick things off.  
+
+> Bayesian methods provide several benefits over frequentist methods in the context of A/B tests - namely in interpretability. Instead of p-values you get direct probabilities on whether A is better than B (and by how much). Instead of point estimates your posterior distributions are parametrized random variables which can be summarized any number of ways. Bayesian tests are also immune to ‘peeking’ and are thus valid whenever a test is stopped. - Frank Portman 
+
+The Bayesian approach provides a context of prior belief, which attempts to capture what we know about the world or the problem we are working on. For example in my publication (Gregory et al., 2016), I used the Bayesian approach to estimate the probability of success of an experiment that had hitherto not been attempted. The Frequentist philosophy struggles with these kinds of problems.  
+
+Your prior beliefs are encapsulated by the distribution of a random variable over which we believe our parameter to lie. In the context of A / B testing, as you expose groups to different tests, you collect the data and combine it with the prior to get the posterior distribution over the parameter(s) in question. Your data updates your prior belief.    
+
+\[
+p(parameter\ |\ data) = \frac{p(data\ |\ parameter)}{p(data)}
+= \frac{p(data\ |\ parameter)p(parameter)}{normalising\ constant}
+\]
+
+(This is hard to solve! We can use MCMC sampling methods instead.)  
+
+The use of an informative prior overcomes Frequentist method issues of repeated testing, early stopping and the low base-rate problem. The frequentists must specify a significance level and stopping rule, the Bayesians must specify a prior.    
+
+This ability to exploit your accrued knowledge might be particular desirable given an extreme example. Imagine you're doing a clinical trial and drug B is working well, can you stop the test and improve the well-being of all your patients? Frequentist statistics says we can't due to the issues of p-hacking which affects our overall [statistical error rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors). Bayes let's us explore and exploit our data.   
+
+## `bayesAB` examples
+
+We design an experiment to assess the click-through-rate (CTR) onto a page. We randomly show users one of two possible pages (page A or page B). We want to determine which page, if any, has a higher CTR.  
+
+We use `rbinom` to randomly generate two Bernoulli distributions, we provide each page with a different probability of success or CTR. To keep things interesting we hide the generation of these data from you (we generate the data in a similar way to our custom `p_h4ckz0r` function).  
+
+```{r echo=FALSE}
+
+set.seed(1337)  #  comparable to earlier
+A_binom <- rbinom(500, 1, .25)
+B_binom <- rbinom(500, 1, .20)
+
+
+```
+
+Always look at the data first. We plot the CTR for pages A and B to visually compare.
+
+```{r 2017-06-18_bar, echo = TRUE}
+par(mfrow=c(1,2))
+
+barplot(table(A_binom), main = "Clicks on A", ylim = c(0, 500))
+barplot(table(B_binom), main = "Clicks on B", ylim = c(0, 500))
+
+```
+
+Page A appears to have a higher CTR. Perhaps our new page made things worse!? We calculate the summary statistics for both pages' data.  
+
+```{r}
+summary(A_binom)
+summary(B_binom)
+```
+
+### The `bayesAB` workflow
+
+* Decide on a generative distribution (Bernoulli for CTR).  
+* Decide on a suitable prior distribution parameters for your data.  
+* Fit a `bayesTest` object.  
+
+#### Decide how you want to parametrize your data
+
+Based on our prior knowledge we know that our page A had a CTR (therefore Bernoulli) of about 25%; something we were trying to improve with using the font [Comic Sans](https://en.wikipedia.org/wiki/Comic_Sans). We've got a lot of data to support this so we're pretty sure about the selection of our prior as being a Bernoulli distribution with the parameter of CRT to lie between .2-.3 range, thus covering the .25.  
+
+Given the binary nature of click or not, we know that the CTR must be between zero and one. We browse for our [probability distribution reference list on Wikipedia](https://en.wikipedia.org/wiki/Probability_distribution#Common_probability_distributions) and discover a suitable candidate; the Beta distribution!  
+
+#### Decide on prior
+
+The vignette tells us:
+
+> The conjugate prior for the Bernoulli distribution is the Beta distribution. (?bayesTest for more info).  
+
+```{r 2017-06-18_beta1}
+# beta distribution has two parameters, use trial and error to get the distribution to look like your imagined prior distribution.
+# the peak should be centred over your expected mean based on previous experiments
+plotBeta(alpha = 100, beta = 200)
+
+```
+
+This is a bit off, and doesn't match our desire to have a conjugate prior encapsulating  the 0.2-0.3 range (determining the correct prior comes with trial and error and practice). Let's try again...  
+
+```{r 2017-06-18_beta2}
+plotBeta(65, 200) # perfect
+```
+
+Now that we've settled on a suitable prior that matches our pre-held belief, let's fit our `bayesTest` object. We are happy with this as our expectation is that the mean CTR of a typical page is around 0.25 with some variation between experiments captured by the distribution which is narrow and falls off to zero sharply. If we were more uncertain the spread of the distribution would reflect this by having a wider base. We can adjust the Beta distribution variance by increasing the size of our parameters (try it).   
+
+```{r eval=FALSE}
+plotBeta(650, 2000) # narrow
+
+```
+
+#### Fit it
+
+```{r}
+ab1 <- bayesTest(A_binom, B_binom,
+                 priors = c('alpha' = 65, 'beta' = 200),
+                 n_samples = 1e5, distribution = 'bernoulli')
+```
+
+This function fits a Bayesian model to our A/B testing sample data. `bayesTest` also comes with a bunch of generic methods; print, summary and plot.  
+
+```{r}
+print(ab1)
+```
+
+`print` talks describes the inputs to the test; the summary statistics of the input data for CTR of pages A and B, the prior (our belief) and the number of posterior samples to draw (1e5 is a good rule of thumb and should be large enough for the distribution to converge).
+
+```{r}
+summary(ab1)
+
+```
+
+`summary` gives us some really interesting values. We'll pick out the credible interval as our main talking point. [Bayesian intervals](https://en.wikipedia.org/wiki/Credible_interval) treat their bounds as fixed and the estimated parameter as a random variable, whereas frequentist confidence intervals treat their bounds as random variables and the parameter as a fixed value.  
+
+The credible interval is more intuitive to both the scientist and the non-scientist. For example, in the experiment above we can be fairly certain that the use of the Comic Sans font in Page B has had a negative effect on CTR.  
+
+* We can quantify this and say that we are 95.8% certain that page A is better than page B.  
+* We can go further, and say that the Credible Interval on (A - B) / B is between 0.008 and 0.386 times better for Page A relative to Page B.  
+
+To elucidate that last bullet point we show that the mean CTR difference between pages divided by page B mean is 0.31, thus page A is 31% better. Rather than relying on just a point we have access to the whole credible interval distribution, with a credible interval length of 0.9 (0.95 - 0.05) the default.
+
+```{r}
+((sum(A_binom) / length(A_binom)) - (sum(B_binom) / length(B_binom))) / (sum(B_binom) / length(B_binom))
+```
+
+`plot` plots the priors, posteriors, and the Monte Carlo ‘integrated’ samples. Have a go at interpreting these plots yourself.  
+
+```{r 2017-06-18_bayesAB}
+p2 <- plot(ab1)
+p2
+```
+
+### What did the data generation method looked like?
+
+Remember we simulated the data ourselves? This is what it looked like.
+
+5% CTR difference and 500 trials / user visits per Page.  
+
+It appears the experiment was a failure and the switch to the Comic Sans font negatively affected the CTR of users.   
+
+```{r}
+set.seed(14641)
+A_binom <- rbinom(500, 1, .25)
+B_binom <- rbinom(500, 1, .2)
+```
+
+### Take home message
+
+We quote [Frank Portman](http://fportman.com/blog/bayesab-a-new-r-package-for-bayesian-ab-testing/) to finish (other AB testing [packages exist](https://cran.r-project.org/)):
+
+> Most A/B test approaches are centered around frequentist hypothesis tests used to come up with a point estimate (probability of rejecting the null) of a hard-to-interpret value. Oftentimes, the statistician or data scientist laying down the groundwork for the A/B test will have to do a power test to determine sample size and then interface with a Product Manager or Marketing Exec in order to relay the results. This quickly gets messy in terms of interpretability. More importantly it is simply not as robust as A/B testing given informative priors and the ability to inspect an entire distribution over a parameter, not just a point estimate.  
+
+Although it is very seductive, using Bayesian inference to combine subjective and objective likelihoods has clear risks, and makes some statisticians understandably nervous. There is no universal best strategy to A/B testing but being aware of both Frequentist and Bayesian inference paradigms is a useful starting point.  
+
+## References
+
+* Agresti, A. (1990) Categorical data analysis. New York: Wiley. Pages 59–66. 
+* Cohen, J. (1994) The Earth is Round. American Psychologist, Vol 49, no 12, 997-1003.  
+* Gregory, M., Alphey, L., Morrison, N. I. and Shimeld, S. M. (2016), Insect transformation with piggyBac: getting the number of injections just right. Insect Mol Biol, 25: 259–271. doi:10.1111/imb.12220  
+* Head ML, Holman L, Lanfear R, Kahn AT, Jennions MD (2015) The Extent and Consequences of P-Hacking in Science. PLoS Biol 13(3):  
+* Nuzzo, (2014). Nature 506, 150–152, doi:10.1038/506150a  
+* Portman, F. (2016). https://cran.r-project.org/  
+* Salsburg, D. (2002) The Lady Tasting Tea: How Statistics Revolutionized Science in the Twentieth Century, W.H. Freeman / Owl Book. ISBN 0-8050-7134-2  
+* Whitaker, Craig F. (9 September 1990). "[Formulation by Marilyn vos Savant of question posed in a letter from Craig Whitaker]. Ask Marilyn". Parade Magazine: 16. (See [Wikipedia link](https://en.wikipedia.org/wiki/Monty_Hall_problem) for links)
+
+```{r}
+sessionInfo()
+```
+
