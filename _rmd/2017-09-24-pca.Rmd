@@ -1,5 +1,5 @@
- ---
-title: "Principal Components Analysis"
+---
+title: "Principal Component Analysis"
 author: matt_gregory
 comments: yes
 date: '2017-09-24'
@@ -7,7 +7,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Summarising data using fewer features"
 published: FALSE
-status: processed
+status: process
 tags:
  - unsupervised learning
  - principal components
@@ -19,7 +19,7 @@ tags:
  - covariance
 categories: Rstats
 output: html_document
- ---
+---
 
 ```{r setup, include=FALSE}
 checkpoint::setSnapshot('2016-12-22')
