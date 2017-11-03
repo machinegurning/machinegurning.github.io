@@ -1,0 +1,55 @@
+==================================================================
+https://keybase.io/mattupson
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of http://machinegurning.com
+  * I am mattupson (https://keybase.io/mattupson) on keybase.
+  * I have a public key ASCaaJ_dwu6Lb-DvQqk-EtxJv4TfHgD1ETYiE0XhpydneQo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "01209a689fddc2ee8b6fe0ef42a93e12dc49bf84df1e00f51136221345e1a72767790a",
+      "host": "keybase.io",
+      "kid": "01209a689fddc2ee8b6fe0ef42a93e12dc49bf84df1e00f51136221345e1a72767790a",
+      "uid": "cafbb250709c5f61037034651aecf919",
+      "username": "mattupson"
+    },
+    "merkle_root": {
+      "ctime": 1508233095,
+      "hash": "5f56839c4bcbfe1cd423d81d169736b13b84db07c484a45e6e32a43f0ab9d1f0de3d267cb0fd749d2552f17b14b9a806403f6426c41c5aaf49a2e0be6ad8bbc7",
+      "hash_meta": "23ea9eef6a645401aad815ce3e7c1f5926e3de7e5d4d3be2691c788dc5a838c3",
+      "seqno": 1589826
+    },
+    "service": {
+      "hostname": "machinegurning.com",
+      "protocol": "http:"
+    },
+    "type": "web_service_binding",
+    "version": 1
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "1.0.33"
+  },
+  "ctime": 1508233123,
+  "expire_in": 504576000,
+  "prev": "4feae061cdf10b49257a13899320de0b4f48f8fd63688bcfac5dbbe865ccfc62",
+  "seqno": 8,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgmmif3cLui2/g70KpPhLcSb+E3x4A9RE2IhNF4acnZ3kKp3BheWxvYWTFA0p7ImJvZHkiOnsia2V5Ijp7ImVsZGVzdF9raWQiOiIwMTIwOWE2ODlmZGRjMmVlOGI2ZmUwZWY0MmE5M2UxMmRjNDliZjg0ZGYxZTAwZjUxMTM2MjIxMzQ1ZTFhNzI3Njc3OTBhIiwiaG9zdCI6ImtleWJhc2UuaW8iLCJraWQiOiIwMTIwOWE2ODlmZGRjMmVlOGI2ZmUwZWY0MmE5M2UxMmRjNDliZjg0ZGYxZTAwZjUxMTM2MjIxMzQ1ZTFhNzI3Njc3OTBhIiwidWlkIjoiY2FmYmIyNTA3MDljNWY2MTAzNzAzNDY1MWFlY2Y5MTkiLCJ1c2VybmFtZSI6Im1hdHR1cHNvbiJ9LCJtZXJrbGVfcm9vdCI6eyJjdGltZSI6MTUwODIzMzA5NSwiaGFzaCI6IjVmNTY4MzljNGJjYmZlMWNkNDIzZDgxZDE2OTczNmIxM2I4NGRiMDdjNDg0YTQ1ZTZlMzJhNDNmMGFiOWQxZjBkZTNkMjY3Y2IwZmQ3NDlkMjU1MmYxN2IxNGI5YTgwNjQwM2Y2NDI2YzQxYzVhYWY0OWEyZTBiZTZhZDhiYmM3IiwiaGFzaF9tZXRhIjoiMjNlYTllZWY2YTY0NTQwMWFhZDgxNWNlM2U3YzFmNTkyNmUzZGU3ZTVkNGQzYmUyNjkxYzc4OGRjNWE4MzhjMyIsInNlcW5vIjoxNTg5ODI2fSwic2VydmljZSI6eyJob3N0bmFtZSI6Im1hY2hpbmVndXJuaW5nLmNvbSIsInByb3RvY29sIjoiaHR0cDoifSwidHlwZSI6IndlYl9zZXJ2aWNlX2JpbmRpbmciLCJ2ZXJzaW9uIjoxfSwiY2xpZW50Ijp7Im5hbWUiOiJrZXliYXNlLmlvIGdvIGNsaWVudCIsInZlcnNpb24iOiIxLjAuMzMifSwiY3RpbWUiOjE1MDgyMzMxMjMsImV4cGlyZV9pbiI6NTA0NTc2MDAwLCJwcmV2IjoiNGZlYWUwNjFjZGYxMGI0OTI1N2ExMzg5OTMyMGRlMGI0ZjQ4ZjhmZDYzNjg4YmNmYWM1ZGJiZTg2NWNjZmM2MiIsInNlcW5vIjo4LCJ0YWciOiJzaWduYXR1cmUifaNzaWfEQIgjslAS/Kf+rCUwVdAF1CNx8jQM6yhfljO0Tjsu0VaIxpvTIYsYEMGel+DcQBO37cUMm9+mI1wIQ9cjaXmDRg2oc2lnX3R5cGUgpGhhc2iCpHR5cGUIpXZhbHVlxCDR95/Yhz/5EoJ0IprQr6z3bj8NuWc8bzbXGXdj0BVGvaN0YWfNAgKndmVyc2lvbgE=
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/mattupson
+
+==================================================================
