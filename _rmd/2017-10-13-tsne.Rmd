@@ -1,0 +1,410 @@
+---
+title: "t-Distributed Stochastic Neighbor Embedding"
+author: matt_gregory
+comments: yes
+date: '2017-10-13'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Visualising high-dimensional datasets"
+published: FALSE
+status: processed
+tags:
+ - unsupervised learning
+ - covariance
+ - tsne
+ - dimension reduction
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+checkpoint::setSnapshot('2016-12-22')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+[Last time](http://www.machinegurning.com/rstats/pca/) we looked at the classic approach of PCA, this time we look at a relatively modern method called t-Distributed Stochastic Neighbour Embedding (t-SNE). The [paper](https://lvdmaaten.github.io/publications/papers/JMLR_2008.pdf) is fairly accessible so we work through it here and attempt to use the method in R on a new data set (there's also a [video talk](https://www.youtube.com/watch?v=RJVL80Gg3lA)).  
+
+The data science process often starts with visualisation; we want to see the data in an attempt to make sense of it. This problem of making visual sense of the data has become more problematic in recent years due to the size and dimensionality of data sets that scientists encounter. As our ability to measure the world improves, we find our old methods for interpreting the data are inadequate, thus we must iterate. Simply providing the user with a tool to [view high dimensionality data in two-dimensions](http://ieeexplore.ieee.org/document/1207445/?reload=true) is not enough, the user needs help in interpreting the data also which can be achieved through [dimensionality reduction methods](https://link.springer.com/chapter/10.1007/978-0-387-39351-3_1) such as t-SNE. These methods convert high dimensional data into two or three dimensions appropriate for scatterplotting.   
+
+The aim of dimensionality reduction is to preserve as much of the significant structure of the high-dimensional data as possible in the low-dimensional map. In our last blog post we looked at a linear method, this time we consider non-linear method which is superior at keeping datapoints that are similar on a low dimensional [manifold](https://en.wikipedia.org/wiki/Manifold) closer together (a manifold is a shape that does not self intersect e.g. a line or a circle; a figure eight is not a manifold).  
+
+## Why t-SNE?
+
+The aim of dimensionality reduction is to preserve as much of the significant structure of the high-dimensional data as possible in the low-dimensional map. Rather than keeping dissimiliar data points apart (like linear methods i.e. PCA), t-SNE keeps the low-dimensional representations of very similar datapoints close together on a low-dimensional, non-linear manifold (the [map](https://en.wikipedia.org/wiki/Map_(mathematics))).  
+
+This concept can be made more interpretable by considering a Swiss roll (a non-linear manifold):  
+* PCA is mainly concerned with preserving large pairwise differences in the map (the squared error).  
+* Are these measures reliable?  
+* Which of the lines (solid or dashed) better captures the similarity between the two data connected points?  
+
+```{r 2017-10-13-scatterplot1}
+set.seed(555)
+
+# draw a spiral scatterplot with some noise
+t <- (0:200) / 200
+spiral <- tibble::tibble("x" = .45 + .55 * t * cos(t * 15) +
+                           runif(length(t), min = -0.05 , max = 0.05),
+                         "y" = .55 - .55 * t * sin(t * 15) +
+                           runif(length(t), min = -0.05 , max = 0.05))
+rm(t)  # remove temp variable
+
+plot(spiral$x, spiral$y, 
+     pch = 19, cex = 0.5, ann = FALSE,
+     xaxt = "n", yaxt = "n"
+     )
+
+# highlight points for comparison
+points(spiral[50, ]$x, spiral[50, ]$y,
+       col = "red")
+points(spiral[140, ]$x, spiral[140, ]$y,
+       col = "red")
+
+# add lines that represent pairwise distances
+# Euclidean
+segments(spiral[50, ]$x, spiral[50, ]$y,
+         spiral[140, ]$x, spiral[140, ]$y,
+         col= 'red', lty = "dashed")
+# A better measure?
+# generate points without noise to facilitate line drawing
+t <- (0:200) / 200
+spiral2 <- tibble::tibble("x" = .45 + .55 * t * cos(t * 15),
+                         "y" = .55 - .55 * t * sin(t * 15))
+rm(t)
+# add line
+points(spiral2[50:140, ]$x, spiral2[50:140, ]$y,
+       type = "l", col = "blue")
+
+```
+
+PCA is not very useful here as it preserves the unreliable large pairwise distances (dashed red-line Euclidean distance is unrepresentative of similarity of the two points). A better representation of the distance between these two points is captured by the blue line, as this considers the structure of the manifold.  
+
+What is reliable here are the small distances between points. Thus a method that focuses on preserving these distances between nearest neighbours in the mapping should be superior for these types of data.  
+
+## Method overview
+
+Reading the paper some new concepts (represented by hyperparameters when tuning the model) arise, such as perplexity. We'll consider these later when implementing the method using code. The paper breaks down the method into a couple of steps which is also explained clearly on [Wikipedia](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding):  
+
+1. Use PCA to reduce the dimensions to a manageable number for pair-wise similarity calculations (i.e. 30) (the function we use later does this by default). 
+2. Convert the high-dimensional data into a matrix of pair-wise similarities map.  
+  a. t-SNE constructs a probability distribution over pairs of high-dimensional objects in such a way that similar objects have a high probability of being picked, whilst dissimilar points have an extremely small probability of being picked. 
+  b. t-SNE defines a similar probability distribution over the points in the low-dimensional map, and it minimizes the [Kullback–Leibler divergence](https://www.countbayesie.com/blog/2017/5/9/kullback-leibler-divergence-explained) between the two distributions with respect to the locations of the points in the map.  
+3. Visualise the low dimensional (2-D or 3-D) map using a scatterplot.  
+
+For further details refer to the [video talk](https://www.youtube.com/watch?v=RJVL80Gg3lA), [paper](https://lvdmaaten.github.io/publications/papers/JMLR_2008.pdf) or this [nice blog](https://www.analyticsvidhya.com/blog/2017/01/t-sne-implementation-r-python/) on how tSNE works if your interested (and a [quick video](https://www.youtube.com/watch?v=wvsE8jm1GzE)).  
+
+## Walk before you can run
+
+We develop a toy example to help us get our head around what's happening and the effect of [tuning of the hyperparamaters](https://distill.pub/2016/misread-tsne/) on the tSNE visualisation. We did this as when learning a new techniques it's tempting to deploy it straight away on your data without getting to grips with how it works and what the output will look like when you have input simulated data (e.g. a simple signal, or random noise). Eventually you may develop a sort of intuition for this useful tool in your arsenal.  
+
+### Generate some toy data
+
+Let's start with a simple 2-D problem of two widely seperated clusters. We generate two clusters in the two dimensions `x` and `y` by drawing from two different normal distributions far apart on both dimensions.  
+
+```{r 2017-10-13-scatterplot2, message=FALSE}
+library(dplyr)
+library(Rtsne)
+library(ggplot2)
+
+set.seed(1337)
+
+x1 <- rnorm(30, mean = 0, sd = 1)
+y1 <- rnorm(30, mean = 0, sd = 1)
+label1 <- rep("salmon", 30)
+
+x2 <- rnorm(30, mean = 10, sd = 1)
+y2 <- rnorm(30, mean = 10, sd = 1)
+label2 <- rep("turquoise3", 30)
+
+
+df <- tibble::tibble("x" = c(x1, x2),
+                          "y" = c(y1, y2),
+                          "label" = c(label1, label2)) %>%
+  dplyr::mutate(id = as.factor(label)) %>%
+  dplyr::select(-id)
+
+ggplot2::ggplot(df, ggplot2::aes(x, y, col = label)) +
+  ggplot2::geom_point() +
+  govstyle::theme_gov()
+
+```
+
+We can consider `df` our training set. We drop the class or `id` dimension from the T-SNE. The class information is not used to determine the spatial coordinates of the map points. The coloring thus provides a way of evaluating how well the map preserves the similarities within each class.  
+
+The perplexity is a hyperparamater we must tune and it sorta says how to balance attention between local and global aspects of your data. The parameter is, in a sense, a guess about the number of close neighbors each point has. The perplexity value has a complex effect which we explore in the following figures. Maaten & Hinton (2008) recommend a cost function parameter for perplexity of between 5-50. The perplexity should also be lower than the number of points otherwise weird stuff happens. We suggest you read the `?Rtsne` help file to make yourself aware of all the arguments therein.    
+
+```{r 2017-10-13-scatterplot3, message=FALSE}
+df -> train
+## Executing the algorithm on curated data
+set.seed(255)
+tsne <- Rtsne(train[,-3], dims = 2, perplexity = 2,
+              max_iter = 500, pca = FALSE)
+
+## Plotting
+plot(tsne$Y, main = "",
+     col = as.character(train$label),
+     pch = 19, ann = FALSE,
+     xaxt = "n", yaxt = "n")
+title(paste("perp = ", tsne$perplexity))
+```
+
+With a perplexity of two our tool has performed poorly. There's no sign of two nicely seperated clusters! Let's investigate the impact of adjusting the perplexity by writing a custom function for this specific case to do the legwork.  
+
+```{r 2017-10-13-scatterplot4, message=FALSE}
+tsneezer <- function(df, perp, seed = 255) {
+  train <- df
+  set.seed(seed)
+  
+tsne <- Rtsne(train[,-3], dims = 2, perplexity = perp,
+              max_iter = 500, pca = FALSE)
+
+## Plotting
+plot(tsne$Y, main = "",
+     col = as.character(train$label),
+     pch = 19, ann = FALSE,
+     xaxt = "n", yaxt = "n")
+title(paste("perp = ", tsne$perplexity))
+}
+
+# perplexity 5
+tsneezer(df, 5)
+```
+
+Better, but still one out of place.
+
+```{r 2017-10-13-scatterplot5, message=FALSE}
+tsneezer(df, 15)
+```
+
+If we increase the perplexity any further the function protects us by erroring and reminding us that the perplexity is too large given the small number of data points.  
+
+These series of figures have warned us against just drawing one t-SNE plot. It's important to try a variety of perplexities as in real data setting you won't know what the generative distributions looked like. For me, this caveat makes t-SNE a dangerous magic box, as you could use it to confirm what you want to see. That's why it's doubly important to be aware of all the common misuses and misconceptions when using this method (protect yourself by reading the paper and a few different blogs on the topic).  
+
+### Stochastic
+
+There's some stochasticity involved which can result in different conclusions. There's some nice videos demonstrating this [here](https://distill.pub/2016/misread-tsne/#citation). We run the t-SNE several times with different random seeds.   
+
+```{r 2017-10-13-scatterplot6, message=FALSE}
+par(mfrow=c(2, 2))
+tsneezer(df, perp = 10, seed = 255)
+tsneezer(df, perp = 10, seed = 1337)
+tsneezer(df, perp = 10, seed = 8008)
+tsneezer(df, perp = 10, seed = 55378008)
+
+# reset
+par(mfrow=c(1, 1))
+```
+
+Note how the first and second run are similar whereas the third looks like there could be more than two clusters of data. This might be overcome by checking we have set the `max_iter`-ations to high enough to allow the structure to stabilise, or running multiple plots with different seeds.  
+
+### Number of steps
+
+The `max_iter` defaults to 1000 but there is no best number (we used 500 above in our custom function). This wil vary from data set to data set thus requiring more than one t-SNE plot before settling on what you think is stability.  
+
+## The MNIST data
+
+Prior to attempting this methodlogy on a novel data set, let's test it on the [famous MNIST digits](http://yann.lecun.com/exdb/mnist/index.html) data minimising our time spent on pre-processing and foramtting. The MNIST data set contains 60,000 grayscale images of handwritten digits. In the paper's experiments, they randomly selected 6,000 of the images for computational reasons. The digit images have 28×28 = 784 pixels (i.e., dimensions).  
+
+We're going to use the MNIST data shared by this [blog](https://www.analyticsvidhya.com/blog/2017/01/t-sne-implementation-r-python/) as it's ready to go.
+
+```{r message=FALSE}
+# from Kaggle
+ # https://www.kaggle.com/c/digit-recognizer/download/train.csv
+# the training data
+ # https://drive.google.com/file/d/0B6E7D59TV2zWYlJLZHdGeUYydlk/view?usp=sharing
+ # train <- readr::read_csv("../data/2017-10-13-mnist_train.csv")
+train <- "data/2017-10-13-mnist_train.csv"
+train <- readr::read_csv(train)
+```
+
+Looking at the data reveals how the image data is stored.
+
+```{r}
+head(train, 4)
+```
+
+### MNIST data intro from [Kaggle](https://www.kaggle.com/c/digit-recognizer/data)
+
+The first column, called "label", is the digit that was drawn by the user. The rest of the columns contain the pixel-values of the associated image.
+
+Each pixel column in the training set has a name like `pixelx`, where `x` is an integer between 0 and 783, inclusive. To locate this pixel on the image, suppose that we have decomposed `x` as x = i * 28 + j, where i and j are integers between 0 and 27, inclusive. Then pixelx is located on row i and column j of a 28 x 28 matrix, (indexing by zero).
+
+For example, `pixel31` indicates the pixel that is in the fourth column from the left, and the second row from the top, as in the ascii-diagram below.
+
+Visually, if we omit the "pixel" prefix, the pixels make up the image like this:
+
+000 001 002 003 ... 026 027
+028 029 030 031 ... 054 055
+056 057 058 059 ... 082 083
+ |   |   |   |  ...  |   |
+728 729 730 731 ... 754 755
+756 757 758 759 ... 782 783
+
+Given the above, we use the arguments `nrow` and `ncol` in `as.matrix` to rearrange the variables to match the pixels position for imaging.  
+
+```{r 2017-10-13-digitise, message=FALSE}
+# Need to flip the images also
+
+digitise <- function(row_number) 
+  {
+  
+  #  simple specific reverse
+  M <- matrix(unlist(train[row_number, -1]),
+                    nrow = 28, ncol = 28,
+                    byrow = FALSE)
+  # an R FAQ, the drop = TRUE as default
+  N <- M[ , c(28:1), drop = FALSE]
+  
+  # plot
+  image(z = N, axes = FALSE)
+}
+
+# Plot some of images
+par(mfrow=c(2, 3))
+# https://stackoverflow.com/questions/30810476/suppress-console-output-in-r-markdown-but-keep-plot
+invisible(lapply(5:10, 
+       digitise
+       ))
+ 
+par(mfrow=c(1, 1)) # set plot options back to default
+```
+
+Reflect on how you are good at identifying digits. Are any of these digits ambiguous to you? What about to a young child? We then proceed to use the `Rtsne` function which takes a while to run. Prior to optimisation, we reduce the data size to make things run faster for our convenience and to reduce plotting density.  
+
+```{r 2017-10-13-mnist}
+# https://www.analyticsvidhya.com/blog/2017/01/t-sne-implementation-r-python/
+
+## Reduce training set
+set.seed(11235813)
+train_sm <- dplyr::sample_frac(train,
+                               size = 0.1)
+
+## Curating the database for analysis with both t-SNE
+Labels <- train_sm$label
+train_sm$label <- as.factor(train_sm$label)
+## for plotting
+colors <- rainbow(length(unique(train_sm$label)))
+names(colors) <- unique(train_sm$label)
+
+## Executing the algorithm on curated data
+tsne <- Rtsne(train_sm[,-1], dims = 2,
+              perplexity = 30,
+              verbose = TRUE, max_iter = 500)
+
+## Plotting
+plot(tsne$Y, # t = 'n', 
+     main = "tsne mnist", 
+     ann = FALSE, xaxt = "n")
+
+```
+
+Given our reduced training set and our removal of the labels it's difficult to make out ten distinct clusters. How many can you make out? How many would you think there were without prior knowledge? This is why t-SNE can be a bit dangerous in that you can squint and see patterns that might not be there or reinforce already held beliefs. Bare in mind the common fallacies introduced above and a few extras ( [described by this blog](https://www.analyticsvidhya.com/blog/2017/01/t-sne-implementation-r-python/) ):  
+
+* Cluster sizes in any t-SNE plot must NOT be evaluated for standard deviation, dispersion or any other similar measures. This is because t-SNE expands denser clusters and contracts sparser clusters to even out cluster sizes. This is one of the reasons for the crisp and clear plots it produces.  
+
+However, if we do add labels we can imagine what features of the digits, in terms of their pixels, are affecting the clustering.  
+
+```{r 2017-10-13-mnist2}
+## Plotting
+plot(tsne$Y,  t = 'n', 
+     main = "tsne mnist", 
+     ann = FALSE, xaxt = "n")
+
+text(tsne$Y, labels = train_sm$label,
+     col = colors[train_sm$label],
+     cex = 0.5)
+```
+
+Those digits that are clustered closer together share similar charcteristics. Think about in your life which digits cause you confusion when discerning which is which and why that might be the case. An obvious example is the number seven which can be written with a cross-bar or not, this might explain the groupings close to some fours above. A few sevens also "look" like ones. This sort of reasoning might help you pick out features of a data set that might help a machine learning classifier with its training and prediction accuracy. We could make this easier by plotting the actual images of the digits on the t-SNE plot as our plotting characters to see what features they are being clustered by. We must also remember to do more than one plot by tweaking the parameters.      
+
+```{r 2017-10-13-mnist_tsne_ggplot}
+tsne2 <- Rtsne(train_sm[, -1], check_duplicates = FALSE, pca = TRUE, 
+    perplexity = 40, theta = 0.5, dims = 2)
+
+plot(tsne2$Y,  t = 'n', 
+     main = "tsne mnist", 
+     ann = FALSE, xaxt = "n")
+
+text(tsne2$Y, labels = train_sm$label,
+     col = colors[train_sm$label],
+     cex = 0.5)
+
+```
+
+Similar story to the previous plot. Try tuning the parameters yourself and see if you can create any weird effects or get strange behaviour.  
+
+## Using t-SNE for feature extraction
+
+If you visit [Kaggle](https://www.kaggle.com/) you often see [winning methods using dimension reduction techniques generate extra features](http://blog.kaggle.com/2017/03/24/leaf-classification-competition-1st-place-winners-interview-ivan-sosnovik/) in addition to the initial features the contestants are provided with in a competition.  
+
+We demonstrate a machine learning workflow you might follow recycling some code from this [Kaggle notebook](https://www.kaggle.com/jrouhana/digit-recognizer-using-t-sne-into-svm). Although alternative methods are probably better (e.g. [XGBoost](http://www.machinegurning.com/rstats/xgboost_halloween/)), we attempt to implement t-SNE into [Support Vector Machines](http://www.machinegurning.com/rstats/fires_cortez/) (SVM).
+
+```{r}
+
+set.seed(1) # for reproducibility
+train_tsne <- Rtsne(train[, -1],  #  drop label
+                    dims = 2, perplexity = 30, 
+                    verbose = FALSE, max_iter = 500)
+```
+
+We run the t-SNE after removing the labels reducing the digits dimensions from all the pixels to a mapping of a two dimensional non-linear manifold. We then create a training and test data set assuming the data are already randomly ordered using these dimensionally reduced data.  
+
+```{r}
+# store data points
+tsneData <- train_tsne$Y
+
+# setup SVM
+trainer <- as.data.frame(tsneData[1:6000, ])
+tester <- as.data.frame(tsneData[6001:10000, ])
+trainerTarget <- as.data.frame(train[1:6000,
+                                            "label"])
+testerTarget <- as.data.frame(train[6001:10000,
+                                           "label"])
+```
+
+We use `svm` to train a support vector machine and then test it using our test data and the `predict` function. We inspect the models performance using `confusionMatrix` from the caret package.  
+
+```{r}
+# Load svm library
+library(e1071)
+
+#SVM. Good results with low cost
+trainerTarget <- as.factor(trainerTarget[, 1])
+tsneSVM1 <- svm(trainer, trainerTarget,
+                kernal="radial", gamma = 1, cost = 10, scale = FALSE)
+
+#Set up SVM predictor
+predictor1 <- predict(tsneSVM1, tester)
+print(caret::confusionMatrix(testerTarget[, 1],
+                             predictor1))
+```
+
+Nine and four, five and eight seem to be the worst offenders for misclassifications.
+
+## Take home message
+
+Not all numbers are created even.
+
+## References
+
+* Maaten, L. and Hinton, G. (2008). Journal of Machine Learning Research 9, 2579-2605  
+* Wattenberg, et al., "How to Use t-SNE Effectively", Distill, 2016. http://doi.org/10.23915/distill.00002
+
+
+```{r}
+sessionInfo()
+```
+
+
+ 
+
+
+

@@ -7,7 +7,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Summarising data using fewer features"
 published: FALSE
-status: process
+status: processed
 tags:
  - unsupervised learning
  - principal components
