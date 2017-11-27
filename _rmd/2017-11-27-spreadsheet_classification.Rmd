@@ -1,0 +1,297 @@
+---
+title: "Classification of spreadsheets"
+author: matt_gregory
+comments: yes
+date: '2017-11-27'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Helping a machine to make sense of tabular data"
+published: FALSE
+status: process
+tags:
+ - feature extraction
+ - classification
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+checkpoint::setSnapshot('2016-12-22')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+Data tables in the form of spreadsheets are ubiquitous in enterprise. For better or worse, they are the Swiss Army Knife for decision support in many organisations.  
+
+[“…They’ve been in existence for decades, they can spread like wildfire, and no one has quite figured out how to stop their proliferation – even if they really, really want to.”](https://blog.kinaxis.com/2010/08/how-are-spreadsheets-like-cockroaches/)
+
+Why are they so [popular](https://twitter.com/pudo/status/248473299741446144?lang=en) and widely used? That's not the focus of this blog, instead we focus on the interesting problem of automating the classification of spreadsheets without manually having to open and inspect them. We use some of the techniques we used in [previous posts](http://www.machinegurning.com/rstats/tsne/) to represent a spreadsheet as a matrix (empty or not-empty cells) and attempt dimension reduction. We also focus on feature extraction of spreadsheets by reviewing the literature and drawing from the epxerience of experts who do [PhDs on this sort of thing](http://www.felienne.com/about-3).  
+
+In this post we refer to workbooks as spreadsheets and sheets as sheets.
+
+## The problem
+
+Tabular data is an abundant source of information on the
+internet, but remains mostly isolated from the latter’s interconnections since spreadsheets lack machine readable descriptions of their structure. The structure can be widely varied and inconsistent, written for human interpretability foremost.  
+
+Most organisations have an abundance of spreadsheets, too many to sort and label manually, often stored in a jumble of directories. Too many to quality assure retrospectively. An automated method for labelling spreadsheets could help with knowledge management and searching for relevant spreadsheets to address business needs as well as identifying areas of business risk. As well as classifying the general content of a spreadsheet (such as the classic case study of 16,189 [Enron spreadsheets](http://www.felienne.com/archives/3634)), perhaps this approach could be used to identify those spreadsheets that have a nice or tidy structure or contain sensitive information. These could be useful tags or classification by theme for an organisation to have on it's spreadsheets, such as data stored at [data GOV.UK](https://data.gov.uk/) (credit to [Duncan Garmonsway](https://github.com/nacnudus) for this idea).    
+
+The following framework can be used to approach this problem:
+
+* select labelled spreadsheets to train classification algorithms  
+* preprocess the data and extract features  
+* train the algorithm  
+* evaluate the derived model on test spreadsheets  
+* classify new spreadsheets 
+
+## Thinking about spreadsheet features
+
+Spreadsheets consist of textual values in a two-dimensional grid format. They are popular precisely because of their high information density due to the semantic meaning communicated in their layout and structure. Often this may be implicit and learned by spreadsheet users as a cultural norm throughout their career and exposure to different conventions. These cultural norms for spreadsheets probably vary from organisation to organisation with some feature being useful regardless of the business. Thus, we might a expect a representative training set to be key to training a good classifier (The famous EUSES spreadsheets are open source and might not be representative of closed source spreadsheets found in an organisation as argued [here](https://figshare.com/articles/Enron_s_Spreadsheets_and_Related_Emails_A_Dataset_and_Analysis/1222882)). We might not expect a model trained on the [Enron spreadsheets](https://figshare.com/articles/Enron_Spreadsheets_and_Emails/1221767) to perform well on the spreadsheets found on [data.gov.uk](https://data.gov.uk/).  
+
+However, these demonstrative examples on model data sets can inform our decision making for feature extraction by standing on the shoulders of giants:  
+
+* This [ENRON paper](https://figshare.com/articles/Enron_s_Spreadsheets_and_Related_Emails_A_Dataset_and_Analysis/1222882) also identifies some useful proxy measures of a spreadsheets quality by categorising the "smells" in a spreadsheets formulae (e.g. unique formulas  that have a claculation chain of five or longer).  
+* This could be useful for an organisation attempting to audit the quality of its spreadsheets and flagging spreadsheets for quality assurance.  
+
+## The data
+
+The data is pretty big (almost 1 Gb zipped) so we don't store it in our repo. Instead download it from origin at [figshare]([Enron spreadsheets](https://figshare.com/articles/Enron_Spreadsheets_and_Emails/1221767)) (Hermanns, 2015). Unfortunately this data is in .xlsx format.  
+
+Some interesting points about this Enron spreadsheet data, especially if it is representative of other organisations (albeit it is somewhat dated now):  
+
+* 24% of Enron spreadsheets with formulas contain an Excel error. It's also noted that formal testing (software development) is rare in spreadsheets in general, discussed in a [recent paper](http://swerl.tudelft.nl/twiki/pub/Main/TechnicalReports/TUD-SERG-2017-002.pdf), the very thing required to protect against these errors.  
+* There is remarkably little diversity in the functions used in spreadsheets: we observe that there is a core set of 15 spreadsheet functions which is used in 76% of spreadsheets. Thus, these could be readily replaced by a software package containing this core set used across the organisation and developed using DevOps best practice. This  supports the case for developing [reproducible analytical pipelines](https://ukgovdatascience.github.io/rap_companion/) in an organisation.      
+* Spreadsheet use within companies in common, with 100
+spreadsheets emailed around per day! Version control is essential for collaboration, yet looks like Enron didn't use it...      
+
+## Reading the data
+
+We copy and modify [Duncan's code](https://github.com/nacnudus/ClassifySpreadsheets/tree/master/analysis) to read in the spreadsheets. It's great practice to work with another data scientist on a project to help you learn new tips and tricks (for example, I hadn't seen the `here` package before).
+
+```{r}
+# Googled it, it's not on CRAN yet
+devtools::install_github("krlmlr/here")
+devtools::install_github("ironholds/piton")
+devtools::install_github("nacnudus/tidyxl")
+
+```
+
+### Workbooks
+
+We look at the spreadsheet files.
+
+```{r}
+c(
+  head(list.files("../data/enron_spreadsheets/"), 3),
+  tail(list.files("../data/enron_spreadsheets/"), 3)
+)
+```
+
+File names presumably have the sender (or receiver prefixed) and are of the `.xlsx` type, thus we need the `tidyxl` package to read them in. Some spreadsheets it is possible to guess what the contents might be from title alone, others the theme would only be apparent on opening.
+
+
+```{r}
+# Set the path to your directory of Enron spreadsheets here
+enron_path <- "../data/enron_spreadsheets/"
+
+# Set the sample size for testing here
+sample_size <- 100
+
+library(dplyr)
+library(purrr)
+library(tidyxl)
+library(here)
+library(readxl)
+
+all_paths <- list.files(enron_path,
+                        full.names = TRUE)
+
+# For testing, look at n (sample_size) random workbooks.
+set.seed(1337)
+sample_paths <- sample(all_paths, sample_size)
+
+paths <- sample_paths
+
+```
+
+Looking at the length of `all_paths` suggests almost 16 thousand unique spreadsheets (workbooks) in our directory.
+
+```{r}
+length(all_paths)
+```
+
+### Worksheets
+
+In our sample of spreadsheets (`r sample_size`) we see that a spreadsheet can have a number of sheets associated with it. We use `purrr` to apply a function elementwise to a list. We then unlist and count the number of sheets per workbook and plot as a histogram.  
+
+```{r 2017-11-27-hist}
+# purr package
+# https://jennybc.github.io/purrr-tutorial/index.html
+sheet_count <- purrr::map(paths, readxl::excel_sheets) %>%
+  purrr::map(length) %>%
+  unlist()
+
+hist(sheet_count, main = "")
+```
+
+### Data range within worksheets
+
+Let's work out what's typical in terms of the height (number of rows) and width of a sheet (number of columns) by sampling. We can then set our "view" to encapsualte this typical range (although `readxl` does this automatically by skipping trailing emp). We need to [read the spreadsheets](https://stackoverflow.com/questions/12945687/read-all-worksheets-in-an-excel-workbook-into-an-r-list-with-data-frames) in and look at some features using the `readxl` package combined with `purrr` for readability.  
+
+To load all the sheets in a workbook into a [list of data frames](http://readxl.tidyverse.org/articles/articles/readxl-workflows.html#iterate-over-multiple-worksheets-in-a-workbook), we need to:  
+
+* Get worksheet names as a self-named character vector (these names propagate nicely).  
+* Use `purrr::map()` to iterate sheet reading.  
+
+```{r}
+
+books <-
+  dplyr::data_frame(filename = basename(paths),
+             path = paths,
+             sheet_name = purrr::map(paths, readxl::excel_sheets)
+             ) %>%
+  dplyr::mutate(id = as.character(row_number()))
+                  
+                  
+                  # purrr::map(purrr::set_names(purrr::map(paths,
+                  #                                        readxl::excel_sheets)),
+                  #            read_excel, path = paths)
+        
+```
+
+We look at one workbook and peek at its first sheet therein.
+
+```{r}
+head(books$sheet_name)
+
+```
+
+It might be more useful to treat each worksheet as the experimental unit by having one row per worksheet and a list column for the data therein plus extra variables could be added later as we extract features from the worksheets.
+
+### Problem read_excel not accepting vector
+
+```{r}
+# Define helper function
+read_excel_allsheets <- function(filename) {
+  # produce a string of the names of the sheets
+    sheets <- readxl::excel_sheets(filename)
+    
+    # produce a list of dataframes
+    x <-    purrr::map(sheets, readxl::read_excel,
+                       path = filename)
+    
+    # label dataframes with nicer sheet names
+    names(x) <- make.names(sheets)
+    x
+}
+
+sheets <-
+  tibble::tibble("sheet_name" = unlist(books$sheet_name),
+                 "path" = rep(paths,
+                              times = unlist(
+                                purrr::map_int(books$sheet_name, length))
+                              ),
+                 "filename" = basename(path),
+                 "sheet_data" = tibble::lst(
+                   readxl::read_excel(path = path[1], 
+                                      sheet = sheet_name[1])
+                   )
+             ) %>% 
+  dplyr::mutate(id = as.character(row_number()))
+
+dplyr::glimpse(sheets)
+
+# Couldn't get the above code to vectorise as i expected
+
+sheets
+```
+
+An alternative here which has some problems and errors for some workbooks. Reading all the data from all the sheets in all the workbooks is trickier than you might think.
+
+```{r}
+
+```
+
+
+The dimensions of the data in each sheet is useful for determing its size but note how there are lots of empty cells, including missing rows and columns making it very different to a [tidy data](http://vita.had.co.nz/papers/tidy-data.html) frame we would prefer to work with. However, it may serve as a rough proxy for the "area" of cells occupied in a sheet.  
+
+```{r}
+
+```
+
+### Dataframes as variables in a list
+
+### Limitations
+
+By reading in as a dataframe, due to the non-tidy of the worksheets often variables that look like `numeric` variables will be labelled as `chr` because of how `readxl` guesses the column variables based on the first thousand rows (as default). If it contains a mix then often the variable defaults to being described as a character variable in R (demonstrated below).  
+
+```{r}
+as.numeric("three")
+as.character("three")
+as.numeric(3)
+as.character(3)
+```
+
+On reading it in, we can only ascertain whether a cell is empty or not (assuming recognised `NA` placeholders were used in the spreadsheets). We can use this to visualise the shape of the sheet in each spreadsheet workbook.   
+
+```{r}
+# Set the view range here, described here 
+view_rows <- 1:25
+view_cols <- 1:25
+
+view_range <- crossing(row = view_rows, col = view_cols)
+
+```
+
+## Feature engineering
+
+Fortunately a recent [literature review](https://arxiv.org/abs/1704.01147) (Reschenhofer et al., 2017) provides a conceptual model for measuring the complexity of spreadsheets which might be useful in helping our classifying spreadsheets that are complex or not, or in classifying the theme of a spreadsheet. We might expect, for example, any economic modelling spreadsheets to be more complicated than a spreadsheet for a social event (a list of names) which could be a useful predictor.   
+
+![A conceptual and integrated model for measuring complexity in spreadsheets.](./figures/2017-11-27-spreadsheets_complexity.png)
+
+This model integrates knowledge about aspects for spreadsheet complexity based on existing complexity metrics. Interestingly these measures can be quantified and have origins in software development and linguistics. We summarise them here but see the [paper](https://arxiv.org/abs/1704.01147) for the full list:   
+
+### Spreadsheet complexity Metrics
+* Average [abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree) (AST) depth per formula  
+* Number of formula cells  
+* Ratio of formula cells to non-empty cells  
+* Number of input cells (feed into a formula)  
+* Ratio of input cells to non-empty cells  
+* Ratio of formula cells to input cells  
+* Number of distinct formulas  
+* Average number of conditionals per formula  
+* Average spreading factor per formula  
+* Average number of functions per formula  
+* Average number of distinct functions per formula  
+* Average number of elements per formula  
+* Entropy of functions within a function  
+
+This review concluded with these aspects captured by the conceptual model for spreadsheet complexity being mostly independent from each other (through covariance of metrics), and a high complexity with respect to a certain aspect does not imply a high complexity with respect to another one. It would be interesting to explore the use of these metrics in feature engineering for our spreadsheets in an attemp to improve our classification of the theme of a spreadsheet. To achieve this we would need to read in and retain all the metadata stored about each cell rather than just the value of the cell.  
+
+## Natural language processing (NLP) of content
+
+Spreadsheet files are often designed to be informative in  determining the theme and content therein. Some authors fail to give good names for files. A spreadsheet could contain worksheets of different themes. As well as numeric data and formulae, spredsheets contain text to impart the theme or the context of the spreadsheet to the human reader. We could use [NLP modelling with bag of words or bag of n-grams methods](https://cran.r-project.org/web/packages/text2vec/vignettes/text-vectorization.html) to facilitate a machine reading this content.  
+
+## Acknowledgements
+
+This project was inspired by [Duncan Garmonsway](https://github.com/nacnudus) and was undertaken using our 20% developpment time at GDS.  
+
+Used a dataset and code to read in from this [repo](https://github.com/nacnudus/ClassifySpreadsheets). 
+
+## References
+
+* Adelfio and Semet, 2013. [The paper](http://www.cs.umd.edu/~hjs/pubs/spreadsheets-vldb13.pdf) 
+* Chen and Caferella, 2013. [The paper](https://pdfs.semanticscholar.org/f51c/a5b5a1f7f75cba9cc4416e33727311e8a79b.pdf).  
+* EUSES [corpus](http://cse.unl.edu/~grother/papers/weuse05.pdf).  
+* Hermanns, 2015. [The paper](https://figshare.com/articles/Enron_s_Spreadsheets_and_Related_Emails_A_Dataset_and_Analysis/1222882).  
+* Hermanns, 2015. [Enron spreadsheet data](https://figshare.com/articles/Enron_Spreadsheets_and_Emails/1221767).  
+* Reschenofer et al., 2017. [A Conceptual model for measuring the complexity of spreadsheets](https://arxiv.org/abs/1704.01147).  
+

@@ -13,3 +13,6 @@ _asset_bundler_cache
 .jekyll-metadata
 packrat/lib*/
 cache
+
+# big data posts
+enron_spreadsheets/
