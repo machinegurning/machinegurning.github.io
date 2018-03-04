@@ -1,0 +1,204 @@
+---
+title: "Deep learning in R"
+author: matt_gregory
+comments: yes
+date: '2018-03-04'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Keras, the LEGO of deep learning"
+published: FALSE
+status: process
+tags:
+ - deep learning
+ - keras
+ - neural network
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+[Keras](https://keras.io/) is a high-level neural networks API developed with a focus on enabling fast experimentation (it has a TensorFlow backend). Being able to go from idea to result with the least possible delay is key to doing good research. This blog post celebrates the release of the new [The Deep Learning with R book](https://www.manning.com/books/deep-learning-with-r) by François Chollet (the creator of Keras) which provides a more comprehensive introduction to both Keras and the concepts and practice of deep learning. The first few chapters are free and are definitely worth checking out.  
+
+For this blog post we assume the reader is familiar with neural networks and how they work.  
+
+Install the package and load it, then install all the dependencies required. We suggest you visit the links above and go through the [MNIST](https://www.manning.com/books/deep-learning-with-r) example which we reproduce here (we looked at this dataset before in our [t-SNE post](http://www.machinegurning.com/rstats/tsne/)). I'm attempting to do this from memory as a way to practise my learning from the book (you can try using just the [cheatsheet](https://github.com/rstudio/cheatsheets/raw/master/keras.pdf)). Teaching others (through blogs or presentations) is a great way to consolidate your  learning of new techniques which will be a theme of your auto-didactic-life-long-learningness critical to your success as a data scientist.  
+
+```{r message=FALSE}
+# run the commented code if this is teh first time you've used Keras
+
+# devtools::install_github("rstudio/keras")
+library(keras)
+# install_keras()
+```
+
+My favourite bits to paraphrase from the Deep Learning in R book, is how a neural network is like a multi-stage information-distillation pipeline. With every layer we purify the message from the input, getting more and more dissimilar to the original input but more and more informative to completing a task such as predicting what animal is represented by a bunch of pixels (cat or not). Thus to proceed, we need labelled input data and a loss function (a way to score how well our network is doing at predicting by comparing predictions against "truth" labels).  
+
+Keras is like LEGO, it's at a high enough level so that we can stick our layers together and experiment readily. It also facilitates scalability, as neural networks can take considerable computing effort (given the size of the data), we need to be able to move our computation readily to a GPU or the cloud (AWS can be handy but to reduce some of the GUI faff and complicated setup, check out this [databox repo](https://github.com/ukgovdatascience/databox) for creating some handy default instances in your terminal).   
+
+```{r message=FALSE}
+mnist <- dataset_mnist()
+train_images <- mnist$train$x
+train_labels <- mnist$train$y
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+```
+
+In the above code chunk we loaded the data with its respective labels (i.e. what digit is represented by the handwritten pixel representation).
+
+```{r}
+str(mnist)
+```
+
+## Tensors and our digit data
+
+As Keras is a TensorFlow frontend, unsurprisingly the data is stored as tensors (multidimensional arrays). You probably are familiar with a one dimensional vector and a two dimensional matrix, thus we can extend to N dimensions using tensor parlance (in tensors people normally say axes rather than dimensions). For example, if you pack matrices (2D tensor) into an array, you create a 3D tensor, or a cube of numbers (interestingly and inconsistently, we just said that axes is preferred but note how "D" is suffixed here!).  
+
+```{r}
+dim(train_images)
+# we can subset as normal
+# train_images[1, , ]
+```
+
+Our training data is a 3D tensor of integers - I thought the digit pixel data would be 2D? Well it is, more precisely, it’s an array of 60,000 matrices of 28 × 28 integers. It's common when working with tensors that the first axis is the sample number, here samples are images of digits. This can be useful in breaking the data up into "batches", as it would be hard to process it all at once, and we can take advantage of parallelising the work to speed up computation time. Each sample has an associated matrix that is a gray-scale image, with integers between 0 and 255.  
+
+```{r fig.height=3, fig.width=3}
+digit <- train_images[1, , ]
+plot(as.raster(digit, max = 255))
+```
+
+This looks like a five. We can check my mental model against reality by comparing it to the "truth" label. We are correct, I wonder what our accuracy for all 70,000 data would be?
+
+```{r}
+train_labels[1]
+```
+
+Gray-scale might be unnecessary detail, we could simplify the problem by setting any non-zero pixel to 1 (thus each pixel is either off or on). We should also convert the labels of the digits to a binary class matrix, a necessary step. 
+
+```{r}
+train_images <- array_reshape(train_images, c(60000, 28 * 28))
+train_images <- train_images / 255
+
+test_images <- array_reshape(test_images, c(10000, 28 * 28))
+test_images <- test_images / 255
+
+# make cat
+train_labels <- to_categorical(train_labels)
+test_labels <- to_categorical(test_labels)
+
+```
+
+Using Keras we can add layers to our network. From our basic knowledge of neural networks we know we need an input layer (the pixels), a hidden layer to distill relevant information from these pixels of the input layer (learning is possible by updating our weights using back propagation based on our loss function and optimiser) which will feed into our final output layer which should have as many nodes as there are classes (ten digits; 0, 1, 2 ... 9). See the comments in the code chunk for extra detail.   
+
+```{r}
+# Keras Model composed of a linear stack of layers
+network <- keras_model_sequential() %>%
+  # 28 times 28 equals 784 pixels
+  # the units argument gives the dimensionality of the output space
+  # a sort of feature space, thus we go from 784 pixels to 512 features
+  # we are distilling information in our representational layer
+  # Why 512 nodes? Dunno but it's between the input and output layer
+  layer_dense(units = 512, activation = "relu", input_shape = c(28*28)) %>%
+  # ten digits to output, we use softmax to give ten probability scores
+  # summing to one, we can predict the digit with the highest proability
+  layer_dense(units = 10, activation = "softmax")
+```
+
+The dense layers are fully connected, there is a direct link between every pair of nodes (for available activation functions see [here](https://keras.io/activations/)). We need to train a lot of weights (parameters)!
+
+```{r}
+str(network)
+```
+
+Prior to fitting the model to the training data we must configure it by specifying what optimiser and loss function to use.
+
+```{r}
+network %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+We are now ready to fit the model to the training data, for a fixed number of iterations on the dataset, in place. The `batch_size` specifies the number of samples per gradient update. You can use the `view_metrics` argument to watch the training in realtime.
+
+```{r}
+network %>%
+  fit(train_images, train_labels, epochs = 5, batch_size = 128)
+
+```
+
+Wow! You can see how quickly the accuracy is improved and how fast the process is. On my machine it took about 10 seconds to run with an accuracy of just under 99% on the training data. However, inevitably our model has overfit, let's assess how it performs on data it hasn't seen before.  
+
+```{r}
+metrics <- network %>% evaluate(test_images, test_labels)
+metrics
+
+```
+
+Almost 98%, not bad for the "Hello World!" of machine learning vision tasks. It was all put together with a few lines of code.  
+
+As usual we can make use of `predict` functionality that could ultimately lead to our model being deployed.  
+
+```{r}
+network %>% predict_classes(test_images[1:10,])
+```
+
+## Hospital readmissions prediction
+
+Thus far we have simply copy and pasted an example. Let's use a dataset we are interested in and attempt to use Keras for prediction of a classification problem based on [hospital data](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) from the UCI machine learning repo (due to its size we have not put this in the data folder for machine gurning repo). We use data that is not pre-processed so we can reflect on this important step.  
+
+The dataset represents ten years (1999-2008) of clinical care at 130 U.S. hospitals. Hospital readmission for diabetic patients is a major concern in the United States. Predicting those patients that are readmitted within 30 days would be useful for efficiency savings, helping doctors spot patients at risk of being readmitted.  
+
+Searching for this dataset on Rpubs reveals someone who has already tidied it somewhat, so we built on and adapted [their work](https://rpubs.com/datascientiest/237230) to our purpose. We also inspected the file by opening it and checking for any dodgy codings of "NA", we found "?" was used and some variables had mostly missing data.  
+
+```{r fig.height=12, fig.width=8}
+# author note, use getwwd() when writing to check relative address
+diabetes <- readr::read_csv("./data/dataset_diabetes/diabetic_data.csv",
+                            na = c("", "NA", "?"))
+
+# review missingness patterns
+extracat::visna(diabetes, type = "b")
+
+```
+
+Race, weight and a few other variables are responsible for most of the missing data, as shown above. We drop them from our dataset.  
+
+For simplicity, we drop `encounter_id` and `patient_nbr` and assume that every row represents a unique admission to the hospital (not true of course, we could use a recurrent neural network to learn from historical experience of the patient).
+
+```{r}
+library(dplyr)
+diab_df <- diabetes %>%
+  select(-race, -weight, -payer_code,
+         -medical_specialty, -diag_1:-diag_3) %>%
+  select(-encounter_id:-patient_nbr) %>%
+  janitor::clean_names()
+
+glimpse(diab_df)
+
+```
+
+
+
+## Multi-class classification
+
+Using the same data we could see how we perform in predicting "No readmission", less than 30 days readmision or greater than 30 days readmission.  
+
+## References
+
+* Beata Strack, Jonathan P. DeShazo, Chris Gennings, Juan L. Olmo, Sebastian Ventura, Krzysztof J. Cios, and John N. Clore, “Impact of HbA1c Measurement on Hospital Readmission Rates: Analysis of 70,000 Clinical Database Patient Records,” BioMed Research International, vol. 2014, Article ID 781670, 11 pages, 2014. 
+
+```{r}
+sessionInfo()
+```
+
