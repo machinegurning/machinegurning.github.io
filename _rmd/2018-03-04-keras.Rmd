@@ -216,31 +216,86 @@ diab_df_aged$target <- dplyr::if_else(diab_df_aged$readmitted == "<30", 1, 0)
 readmitted <- diab_df_aged$readmitted  # store for later
 diab_df_tgt <- dplyr::select(diab_df_aged, -readmitted)
 
-glimpse(diab_df_tgt)
+# glimpse(diab_df_tgt)
 
 # We can examine these character variables more closely using
-for (i in 16:41) {
-  print("-------------------------")
+# CaVEAt: table is slow
+# for (i in 16:41) {
+#   print("-------------------------")
+# 
+#   print(names(diab_df_tgt[, i]))
+#   print(table(diab_df_tgt[, i]))
+#   
+#   print("-------------------------")
+#   }
 
-  print(names(diab_df_tgt[, i]))
-  print(table(diab_df_tgt[, i]))
-  
-  print("-------------------------")
-  }
-
-# Quite a few are uninformative, there's too few instances to learn from
+# Quite a few are uninformative (i.e. they have zero variance),
+# there's too few instances to learn from
 # and some are "No" for all samples, again uninformative
 # you might as well include a feature that gives their species
+# Googling revealed caret has ?nearZeroVar() but we have some char
+# thus we copy a functino from stacoverflow
+# https://stackoverflow.com/questions/8805298/quickly-remove-zero-variance-variables-from-a-data-frame
+
+rm_zero_var_features <- function(dat) {
+    out <- lapply(dat, function(x) length(unique(x)))
+    want <- which(!out > 1)
+    unlist(want)
+}
+
+# name variables which are zero variance
+diab_df_useless2drop <- rm_zero_var_features(diab_df_tgt)
+# drop them
+diab_df_useless_dropped <- diab_df_tgt[ , c(-diab_df_useless2drop[1],
+                                            -diab_df_useless2drop[2])]
+
+glimpse(diab_df_useless_dropped)
 
 ```
 
 ```{r}
+# now that we removed these variables which were zero var
+# should be able to use dummyVars
 library(caret)
 # dummify data
-dmy <- dummyVars(target ~ ., data = diab_df_tgt)
-trsf <- data.frame(predict(dmy, newdata = diab_df_tgt))
+dmy <- dummyVars(target ~ ., data = diab_df_useless_dropped)
+trsf <- data.frame(predict(dmy, newdata = diab_df_useless_dropped))
 glimpse(trsf)
 ```
+
+This is problematic as we have falling foul of the dummy variable trap; we have perfect collinearity between some variables, for example `genderFemale` and `genderMale`, if we know one we know the other (see [here](https://amunategui.github.io/dummyVar-Walkthrough/) for more details). The fullRank parameter is worth protects us against this. Let’s turn on fullRank and try our data frame again.  
+
+```{r}
+# repeat but with fullrank True
+dmy <- dummyVars(target ~ ., data = diab_df_useless_dropped,
+                 fullRank = TRUE)
+trsf <- data.frame(predict(dmy, newdata = diab_df_useless_dropped))
+glimpse(trsf)
+```
+
+This reduces our variables or features from 95 to 69 and importantly avoids perfect collinearity in the features. In essence this is bad as you are increasing the number of parameters in the model without accrueing any extra information. It also invalidates some of the assumptions for linear regression and least squares estimation.   
+
+Almost there! Just need to scale some of our variables between zero and one so they don't have excessive effect on our model (bigger numbers would have stronger effect on predicting the response variable).  
+
+```{r}
+# remove NA, as only 3
+# sum(!complete.cases(trsf))
+
+# create function to scale
+range01 <- function(x, ...) {
+  (x - min(x, ...)) / (max(x, ...) - min(x, ...))
+}
+
+diab_scaled <-  trsf %>%
+  na.omit() %>% 
+  purrr::map_df(., range01)
+
+glimpse(diab_scaled)
+```
+
+That was a bit long winded but we've scaled all our variables and removed some of the uninformative and unhelpful variables (some of the `diag` variables could be useful, it would be nice if we could link this dataset or fill in the `NA`s somehow.).  
+
+## Modelling
 
 
 
