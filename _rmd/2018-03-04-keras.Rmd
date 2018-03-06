@@ -46,7 +46,7 @@ My favourite bits to paraphrase from the Deep Learning in R book, is how a neura
 
 Keras is like LEGO, it's at a high enough level so that we can stick our layers together and experiment readily. It also facilitates scalability, as neural networks can take considerable computing effort (given the size of the data), we need to be able to move our computation readily to a GPU or the cloud (AWS can be handy but to reduce some of the GUI faff and complicated setup, check out this [databox repo](https://github.com/ukgovdatascience/databox) for creating some handy default instances in your terminal).   
 
-```{r message=FALSE}
+```{r message=FALSE, warning = FALSE}
 mnist <- dataset_mnist()
 train_images <- mnist$train$x
 train_labels <- mnist$train$y
@@ -133,6 +133,8 @@ network %>% compile(
 We are now ready to fit the model to the training data, for a fixed number of iterations on the dataset, in place. The `batch_size` specifies the number of samples per gradient update. You can use the `view_metrics` argument to watch the training in realtime.
 
 ```{r}
+set.seed(1337)
+
 network %>%
   fit(train_images, train_labels, epochs = 5, batch_size = 128)
 
@@ -148,7 +150,7 @@ metrics
 
 Almost 98%, not bad for the "Hello World!" of machine learning vision tasks. It was all put together with a few lines of code.  
 
-As usual we can make use of `predict` functionality that could ultimately lead to our model being deployed.  
+As usual in R we can make use of `predict` functionality that could ultimately lead to our model being deployed (albeit the Keras version of it).  
 
 ```{r}
 network %>% predict_classes(test_images[1:10,])
@@ -165,16 +167,16 @@ Searching for this dataset on Rpubs reveals someone who has already tidied it so
 ```{r fig.height=12, fig.width=8}
 # author note, use getwwd() when writing to check relative address
 diabetes <- readr::read_csv("./data/dataset_diabetes/diabetic_data.csv",
-                            na = c("", "NA", "?"))
+                            na = c("", "NA", "?", "Unknown/Invalid"))
 
 # review missingness patterns
 extracat::visna(diabetes, type = "b")
 
 ```
 
-Race, weight and a few other variables are responsible for most of the missing data, as shown above. We drop them from our dataset.  
+Race, weight and a few other variables are responsible for most of the missing data, as shown above (see [here](http://www.machinegurning.com/rstats/kaggle_ames_house_prices/) for help interpreting this figure). We drop them from our dataset.    
 
-For simplicity, we drop `encounter_id` and `patient_nbr` and assume that every row represents a unique admission to the hospital (not true of course, we could use a recurrent neural network to learn from historical experience of the patient).
+For simplicity, we drop `encounter_id` and `patient_nbr` and assume that every row represents a unique admission to the hospital (not true of course, we could use a recurrent neural network to learn from historical experience of the patient but we simplify things for now).
 
 ```{r}
 library(dplyr)
@@ -186,6 +188,58 @@ diab_df <- diabetes %>%
 
 glimpse(diab_df)
 
+```
+
+Look at the variables. Age is not useful in its current format, let's convert it into something infomrative Some of the variables / features are of the wrong type. We do some basic tidying below, with the comments explaining what's happening. We could also benefit from converting to dummy variables for modelling purposes. The caret package can help with this.
+
+```{r}
+# fix age
+diab_df$age <- gsub("[()]", "", diab_df$age)
+diab_df$age <- gsub("[[]]", "", diab_df$age)
+diab_df$age <- gsub("\\[", "", diab_df$age)
+
+# split string to remove hyphen and convert into numeric
+# create new variables then drop uninformative age variables
+diab_df$age_low <- as.numeric(stringr::str_split(diab_df$age, "-", simplify = TRUE)[, 1])
+diab_df$age_high <- as.numeric(stringr::str_split(diab_df$age, "-", simplify = TRUE)[, 2])
+
+diab_df$age_mid <- round((diab_df$age_low + 
+                          diab_df$age_high) / 2, digits = 0)
+
+# drop redundant, keep age mid
+diab_df_aged <- dplyr::select(diab_df,
+                       -age, -age_low, -age_high)
+
+# create target / response variable, make binary
+diab_df_aged$target <- dplyr::if_else(diab_df_aged$readmitted == "<30", 1, 0)
+# drop redundant readmitted, could use later for multiclass prediction
+readmitted <- diab_df_aged$readmitted  # store for later
+diab_df_tgt <- dplyr::select(diab_df_aged, -readmitted)
+
+glimpse(diab_df_tgt)
+
+# We can examine these character variables more closely using
+for (i in 16:41) {
+  print("-------------------------")
+
+  print(names(diab_df_tgt[, i]))
+  print(table(diab_df_tgt[, i]))
+  
+  print("-------------------------")
+  }
+
+# Quite a few are uninformative, there's too few instances to learn from
+# and some are "No" for all samples, again uninformative
+# you might as well include a feature that gives their species
+
+```
+
+```{r}
+library(caret)
+# dummify data
+dmy <- dummyVars(target ~ ., data = diab_df_tgt)
+trsf <- data.frame(predict(dmy, newdata = diab_df_tgt))
+glimpse(trsf)
 ```
 
 
