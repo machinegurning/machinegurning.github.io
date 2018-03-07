@@ -370,7 +370,7 @@ Can we predict which patients will be readmitted to hospital within 30 days of d
 ```{r}
 model <- keras_model_sequential() %>%
   layer_dense(units = 10, activation = "relu", input_shape = c(69)) %>%
-  layer_dense(units = 1, activation = "softmax")
+  layer_dense(units = 2, activation = "softmax")
 ```
 
 Note how the output layer creates 2 output values, one for each readmission class (not, or within 30 days). The first layer, which contains a somewhat arbritrary 10 hidden nodes (a dimension in the representation space) in the hidden layer, on the other hand, has an input_shape of 69. This is because our `x_train` has 69 columns.
@@ -406,7 +406,7 @@ We can create a validation set to track our progress as our model trains, thus w
 
 ```{r}
 # set aside validation set
-val_indices <- 1:5000
+val_indices <- 1:10000
 
 x_val <- x_train[val_indices,]
 partial_x_train <- x_train[-val_indices,]
@@ -420,11 +420,10 @@ We can now train the model for 20 epochs (20 iterations over all samples in the 
 ```{r}
 
 history <- model %>% fit(
-  partial_x_train,
-  partial_y_train,
+  x_train,
+  y_train,
   epochs = 20,
-  batch_size = 512,
-  validation_data = list(x_val, y_val)
+  batch_size = 512
 )
 ```
 
@@ -435,11 +434,28 @@ library(ggplot2)
 plot(history)
 ```
 
+You might be pretty hyped by the accuracy but hold your horses! Let's reflect on how well the null model would perform. What if we just predicted every patient would not be readmitted within 30 days?  
 
+```{r}
+# the number for which we were correct divided by total patients
+sum(y_test[, 1] == 1) / dim(y_test)[1]
+```
+
+Thus our neural network has the same accuracy as this null model! Agh the curse of an imbalanced data set. This highlights an important point, it's tempting to get caught up in the wizardry of deep learning, but remember it's not magic, apply your standard thinking to the problem to avoid embaressing outcomes like this (we of course should use a confusion matrix as accuracy is not that useful a measure here but we use it to make the point).  
+
+## Fix validation
+
+## Retraining the model from scratch
+
+## Deploying your model on new data
 
 ## Multiclass modelling
 
 Using the same data we could see how we perform in predicting "No readmission", less than 30 days readmision or greater than 30 days readmission. This would require a different loss function (categorical crossentropy).    
+
+## Conclusion
+
+Keras provides a simple and powerful LEGO block approach to building a neural network. In this blog we demonstrated how to go from a reasonably clean patient data set to a model that predicted the readmission rates of those patients.  
 
 ## References
 
