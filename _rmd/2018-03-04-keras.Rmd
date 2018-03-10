@@ -167,6 +167,7 @@ Searching for this dataset on Rpubs reveals someone who has already tidied it so
 
 ```{r fig.height=12, fig.width=8}
 # author note, use getwwd() when writing to check relative address
+# different relative address in interactive use and when knitting
 diabetes <- readr::read_csv("./data/dataset_diabetes/diabetic_data.csv",
                             na = c("", "NA", "?", "Unknown/Invalid"))
 
@@ -412,17 +413,18 @@ x_val <- x_train[val_indices,]
 partial_x_train <- x_train[-val_indices,]
 y_val <- y_train[val_indices]
 partial_y_train <- y_train[-val_indices]
+# this didn't work in the next step so ignored for now
 ```
 
 
-We can now train the model for 20 epochs (20 iterations over all samples in the `x_train` and `y_train` tensors), in mini-batches of 512 samples. At the same time, we’ll monitor loss and accuracy on the 5,000 samples that we set apart. You do so by passing the validation data as the `validation_data` argument.  
+We can now train the model for 10 epochs (10 iterations over all samples in the `x_train` and `y_train` tensors), in mini-batches of 512 samples. At the same time, we’ll monitor loss and accuracy on the 5,000 samples that we set apart. You do so by passing the validation data as the `validation_data` argument.  
 
 ```{r}
 
 history <- model %>% fit(
   x_train,
   y_train,
-  epochs = 20,
+  epochs = 10,
   batch_size = 512
 )
 ```
@@ -442,6 +444,74 @@ sum(y_test[, 1] == 1) / dim(y_test)[1]
 ```
 
 Thus our neural network has the same accuracy as this null model! Agh the curse of an imbalanced data set. This highlights an important point, it's tempting to get caught up in the wizardry of deep learning, but remember it's not magic, apply your standard thinking to the problem to avoid embaressing outcomes like this (we of course should use a confusion matrix as accuracy is not that useful a measure here but we use it to make the point).  
+
+## Improving the model
+
+We need to penalise the model somehow for simply predicting the modal class (not readmitted) otherwise we will get stuck at this local minima. There are a few approaches that spring to mind; rebalance the data with [SMOTE](https://www.jair.org/media/953/live-953-2037-jair.pdf), customise loss function (see alpha gov), change class weights (easier than customising loss function).  
+
+### SMOTE
+
+Considering this [SMOTE blog](http://amunategui.github.io/smote/), our data should be considered a rare event (as < 15%). The general idea of this method is to artificially generate new examples of the minority class using the nearest neighbors of these cases.   
+
+```{r}
+print(prop.table(table(diab_scaled$target)))
+
+```
+
+We go back to our dataframe version to make handling easier. The one where everything was scaled. We randomly split the data 
+
+```{r}
+set.seed(255)
+splitIndex <- createDataPartition(diab_scaled$target, p = .50,
+                                  list = FALSE,
+                                  times = 1)
+trainSplit <- diab_scaled[splitIndex,]
+testSplit <- diab_scaled[-splitIndex,]
+ 
+prop.table(table(trainSplit$target))
+```
+
+The outcome balance between both splits is still around 11% therefore representative of the bigger set - we’re in good shape. 
+
+Let’s create extra positive observations using SMOTE. We set `perc.over = 100` to double the quantity of positive cases, and set `perc.under = 200` to keep half of what was created as negative cases.
+
+> And I SMOTE his ruin upon the mountain-side. - Gandalf
+
+```{r eval=FALSE}
+library(DMwR)
+trainSplit$target <- as.factor(trainSplit$target)
+trainSplit <- DMwr::SMOTE(target ~ ., trainSplit,
+                    perc.over = 100, perc.under = 200)
+trainSplit$target <- as.numeric(trainSplit$target)
+
+# try using train we have already
+train_smote <- train
+
+train_smote$target <- as_factor(train_smote$target)
+train_smote <- SMOTE(target ~ ., train_smote,
+                    perc.over = 100, perc.under = 200,
+                    k = 5)
+train_smote$target <- as.numeric(train_smote$target)
+```
+
+Fail. Unfortunately this is erroring and a quick debug attempt fails. Let's try one of our alternatives so we don't have to mess about with the data again. We leavve this code in our blog as we acknowledge it as a strategy worth investigating further.  
+
+### Custom class weights
+
+Let's penalise the model for guessing zero everytime, we can do that using the `class_weight` argument. In essence it makes it more expensive to guess zero each time. From the `?fit` and documentation on `class_weight` it looks like we pass it a list. We force our algorithm to treat every instance of class 1 (readmission within 30 days) as 10 instances of class 0.    
+
+```{r}
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 10,
+  batch_size = 512,
+  class_weight = list("0"=1,"1"=10)
+)
+```
+
+
+
 
 ## Fix validation
 
