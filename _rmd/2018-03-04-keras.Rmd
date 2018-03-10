@@ -403,28 +403,18 @@ model %>% compile(
 )
 ```
 
-We can create a validation set to track our progress as our model trains, thus we can check it on data it has never seen. 
+We can create a validation set to track our progress as our model trains, thus we can check it on data it has never seen. For simplicity we skip this step here but it is a thing that can be useful.  
 
-```{r}
-# set aside validation set
-val_indices <- 1:10000
+### Training the model
 
-x_val <- x_train[val_indices,]
-partial_x_train <- x_train[-val_indices,]
-y_val <- y_train[val_indices]
-partial_y_train <- y_train[-val_indices]
-# this didn't work in the next step so ignored for now
-```
-
-
-We can now train the model for 10 epochs (10 iterations over all samples in the `x_train` and `y_train` tensors), in mini-batches of 512 samples. At the same time, we’ll monitor loss and accuracy on the 5,000 samples that we set apart. You do so by passing the validation data as the `validation_data` argument.  
+We can now train the model for 5 epochs (5 iterations over all samples in the `x_train` and `y_train` tensors), in mini-batches of 512 samples.  
 
 ```{r}
 
 history <- model %>% fit(
   x_train,
   y_train,
-  epochs = 10,
+  epochs = 5,
   batch_size = 512
 )
 ```
@@ -480,7 +470,7 @@ Let’s create extra positive observations using SMOTE. We set `perc.over = 100`
 ```{r eval=FALSE}
 library(DMwR)
 trainSplit$target <- as.factor(trainSplit$target)
-trainSplit <- DMwr::SMOTE(target ~ ., trainSplit,
+trainSplit <- DMwR::SMOTE(target ~ ., trainSplit,
                     perc.over = 100, perc.under = 200)
 trainSplit$target <- as.numeric(trainSplit$target)
 
@@ -494,38 +484,175 @@ train_smote <- SMOTE(target ~ ., train_smote,
 train_smote$target <- as.numeric(train_smote$target)
 ```
 
-Fail. Unfortunately this is erroring and a quick debug attempt fails. Let's try one of our alternatives so we don't have to mess about with the data again. We leavve this code in our blog as we acknowledge it as a strategy worth investigating further.  
+Fail. Unfortunately this is erroring and a quick debug attempt fails. Let's try one of our alternatives so we don't have to mess about with the data again. We leave this code in our blog as we acknowledge it as a strategy worth investigating further.  
 
 ### Custom class weights
 
-Let's penalise the model for guessing zero everytime, we can do that using the `class_weight` argument. In essence it makes it more expensive to guess zero each time. From the `?fit` and documentation on `class_weight` it looks like we pass it a list. We force our algorithm to treat every instance of class 1 (readmission within 30 days) as 10 instances of class 0.    
+Let's penalise the model for guessing zero everytime, we can do that using the `class_weight` argument. In essence it makes it more expensive to guess zero each time. From the `?fit` and documentation on `class_weight` it looks like we pass it a list. We force our algorithm to treat every instance of class 1 (readmission within 30 days) as 9 instances of class 0.    
 
 ```{r}
 history <- model %>% fit(
   x_train,
   y_train,
-  epochs = 10,
+  epochs = 5,
   batch_size = 512,
-  class_weight = list("0"=1,"1"=10)
+  class_weight = list("0" = 1,"1" = 9)
 )
 ```
 
+This returns a more realistic accuracy as our model is penalised from just guessing "No readmission" for every patient.  
 
+### Predict labels of test data
 
+```{r}
+# Predict the classes for the test data
+classes <- model %>% predict_classes(x_test, batch_size = 128)
 
-## Fix validation
+# convert y_test to vector, same dim as classes
+# remember we converted it to a binary matrix before with
+# to_categorical
+y_test_v <- dplyr::if_else(y_test[, 1] == 1, 0, 1, missing = NULL)
 
-## Retraining the model from scratch
+# Confusion matrix
+confusionMatrix(data = classes, reference = y_test_v)
+```
 
-## Deploying your model on new data
+As you can see the model is performing poorly but at least it isn't just guessing "No readmission" for every patient. It seems our `class_weight` specification has swung things the other way, where by perhaps we are being too hard on them model missing patients that are readmitted the model is creating lots of false positives.  
+
+We can also generate the likelihood of a patient being readmitted within 30 days. For different samples we are more confident of a given outcome.  
+
+```{r}
+model %>% predict(x_test[1:10,])
+```
+
+The model seems to be mostly unsure with likelihoods hovering around 50:50.  
+
+### Model evaluation
+
+```{r}
+# Evaluate on test data and labels
+score <- model %>% evaluate(x_test, y_test, batch_size = 128)
+
+# Print the score
+print(score)
+```
+
+This model is not particularly useful it needs some work.  
+
+## Experimentation and model fine tuning
+
+As you explore deep learning don't be dissapointed that things weren't as easy as with the MNIST data set. We need to work for our improvements in our model, we have a few options.  
+
+* Change the number of hidden layers  
+* Adjust the number of nodes in each hidden layer  
+
+Given our data set isn't too small this might be an OK approach (overfitting might be less of a problem than with a small data problem).  
+
+Let's add another layer (we should change one thing at a time so we can see the impact on accuracy). We create another pre-processing layer prior to our 10 unit hidden layer we had previously. It will take longer to run but we might uncover more complicated features within the data that we might of missed before (or we might overfit).  
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 30, activation = "relu", input_shape = c(69)) %>%
+  layer_dense(units = 10, activation = "relu") %>%
+  layer_dense(units = 2, activation = "softmax")
+
+# Compile the model
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 10,
+  batch_size = 512,
+  class_weight = list("0" = 1,"1" = 9)
+)
+
+# Evaluate on test data and labels
+score <- model %>% evaluate(x_test, y_test, batch_size = 128)
+# Print the score
+print(score)
+
+# Predict the classes for the test data
+classes <- model %>% predict_classes(x_test, batch_size = 128)
+# Confusion matrix
+confusionMatrix(classes, y_test_v)
+
+```
+
+We perform better on the test data this time round with a 20% improvement compared to the simpler network. However we are still missing two thirds of the readmitted patients and creating more work for ourselves by flagging non-readmitted patients as a readmission risk four times more than the real risk ones.    
+
+### Twisting the knobs
+
+Not bad for a first go and there are other options which include:
+
+* Fine tune optimiser  
+* Reduce the learning rate  
+* Adjusting the batch site and number of epochs  
+
+## Saving your model
+
+You can save your model using the `save_model_hdf5()` function as well as a few other options.  
+
+## Learning from others
+
+This field moves fast and its important to consult the literature for good setups. For example a recent paper looked at this kind of problem, let's use their method and model architecture (Jamie et al., 2017). Read the model training and evaluation section from this open PLOS ONE paper for a description of the design decisions taking and why.    
+
+We can combine it with our fine tuning we used earlier as this is a different data set and problem.  
+
+```{r}
+set.seed(1337)
+model <- keras_model_sequential() %>%
+  # one dense laye rhalf the nodes of the input
+  # drop out layer between each layer
+  layer_dense(units = 35, activation = "relu",
+              input_shape = c(69)) %>%
+  layer_dropout(rate = 1) %>%
+  layer_dense(units = 5, activation = "relu") %>%
+  layer_dropout(rate = 1) %>%
+  layer_dense(units = 2, activation = "softmax")
+
+# Compile the model
+# adam optimiser
+model %>% compile(
+  optimizer = "adam",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+# epoch and batch size changed
+# method didnt specify class weight
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 5,
+  batch_size = 64,
+  class_weight = list("0" = 1,"1" = 9)
+)
+
+# Evaluate on test data and labels
+score <- model %>% evaluate(x_test, y_test, batch_size = 128)
+# Print the score
+print(score)
+
+# Predict the classes for the test data
+classes <- model %>% predict_classes(x_test, batch_size = 128)
+# Confusion matrix
+confusionMatrix(classes, y_test_v)
+```
+
+This compares to the aforementioned paper's sensitivity score of 59% for neural network and 50% for traditional hospital risk modelling methods in the United States.  
 
 ## Multiclass modelling
 
-Using the same data we could see how we perform in predicting "No readmission", less than 30 days readmision or greater than 30 days readmission. This would require a different loss function (categorical crossentropy).    
+Using the same data we could see how we perform in predicting "No readmission", less than 30 days readmision or greater than 30 days readmission. This would require a different loss function (categorical crossentropy). We leave this to you, the reader to explore.    
 
 ## Conclusion
 
-Keras provides a simple and powerful LEGO block approach to building a neural network. In this blog we demonstrated how to go from a reasonably clean patient data set to a model that predicted the readmission rates of those patients.  
+Keras provides a simple and powerful LEGO block approach to building a neural network. In this blog we demonstrated how to go from a reasonably clean patient data set to a model that predicted the readmission rates of those patients albeit poorly.  
 
 ## References
 
