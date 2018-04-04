@@ -1,0 +1,735 @@
+---
+title: "Deep learning in R"
+author: matt_gregory
+comments: yes
+date: '2018-03-04'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Keras, the LEGO of deep learning"
+published: FALSE
+status: processed
+tags:
+ - deep learning
+ - keras
+ - neural network
+ - tensorFlow
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+[Keras](https://keras.io/) is a high-level deep learning API developed with a focus on enabling fast experimentation (it supports a number of backends, including tensorflow).
+Being able to go from idea to result with the least possible delay is key to doing good research.
+This blog post celebrates the release of the new [The Deep Learning with R book](https://www.manning.com/books/deep-learning-with-r) by François Chollet (the creator of Keras) which provides a more comprehensive introduction to both Keras and the concepts and practice of deep learning.
+The first few chapters are free and are definitely worth checking out.  
+
+For this blog post we assume the reader is familiar with neural networks and how they work.  
+
+Install the package and load it, then install all the dependencies required.
+We suggest you visit the links above and go through the [MNIST](https://www.manning.com/books/deep-learning-with-r) example which we reproduce here (we looked at this dataset before in our [t-SNE post](http://www.machinegurning.com/rstats/tsne/)).
+I'm attempting to do this from memory as a way to practise my learning from the book (you can try using just the [cheatsheet](https://github.com/rstudio/cheatsheets/raw/master/keras.pdf)).
+Teaching others (through blogs or presentations) is a great way to consolidate your  learning of new techniques which will be a theme of your auto-didactic-life-long-learningness critical to your success as a data scientist.  
+
+```{r message=FALSE}
+# run the commented code if this is teh first time you've used Keras
+
+# devtools::install_github("rstudio/keras")
+library(keras)
+# install_keras()
+```
+
+My favourite bit to paraphrase from the Deep Learning in R book, is how a neural network is like a multi-stage information-distillation pipeline.
+With every layer we purify the message from the input, getting more and more dissimilar to the original input but more and more informative to completing a task such as predicting what animal is represented by a bunch of pixels (cat or not).
+Thus to proceed, we need labelled input data and a loss function (a way to score how well our network is doing at predicting by comparing predictions against "truth" labels). 
+
+Keras is like LEGO, it's at a high enough level so that we can stick our layers together and experiment readily.
+It also facilitates scalability, as neural networks can take considerable computing effort (given the size of the data), we need to be able to move our computation readily to a GPU or the cloud (AWS can be handy but to reduce some of the GUI faff and complicated setup, check out this [databox repo](https://github.com/ukgovdatascience/databox) for creating some handy default instances in your terminal).   
+
+```{r message=FALSE, warning = FALSE}
+mnist <- dataset_mnist()
+train_images <- mnist$train$x
+train_labels <- mnist$train$y
+test_images <- mnist$test$x
+test_labels <- mnist$test$y
+```
+
+In the above code chunk we loaded the data with its respective labels (i.e. what digit is represented by the handwritten pixel representation).
+
+```{r}
+str(mnist)
+```
+
+## Tensors and our digit data
+
+As Keras can act as a TensorFlow frontend, unsurprisingly the data is stored as tensors (multidimensional arrays).
+You probably are familiar with a one dimensional vector and a two dimensional matrix, thus we can extend to N dimensions using tensor parlance (in tensors people normally say axes rather than dimensions).
+For example, if you pack matrices (2D tensor) into an array, you create a 3D tensor, or a cube of numbers (interestingly and inconsistently, we just said that axes is preferred but note how "D" is suffixed here!).  
+
+```{r}
+dim(train_images)
+# we can subset as normal
+# train_images[1, , ]
+```
+
+Our training data is a 3D tensor of integers - I thought the digit pixel data would be 2D? Well it is, more precisely, it’s an array of 60,000 matrices of 28 × 28 integers.
+It's common when working with tensors that the first axis is the sample number, here samples are images of digits.
+This can be useful in breaking the data up into "batches", as it can be hard to process it all at once, and we can take advantage of parallelising the work to speed up computation time.
+Each sample has an associated matrix that is a gray-scale image, with integers between 0 and 255.  
+
+```{r 2018-03-04-minst5, fig.height=3, fig.width=3}
+digit <- train_images[1, , ]
+plot(as.raster(digit, max = 255))
+```
+
+This looks like a five.
+We can check my mental model against reality by comparing it to the "truth" label.
+We are correct, I wonder what our accuracy for all 70,000 data would be?
+
+```{r}
+train_labels[1]
+```
+
+Gray-scale might be unnecessary detail, we could simplify the problem by setting any non-zero pixel to 1 (thus each pixel is either off or on).
+We should also convert the labels of the digits to a binary class matrix, a necessary step. 
+
+```{r}
+train_images <- array_reshape(train_images, c(60000, 28 * 28))
+train_images <- train_images / 255
+
+test_images <- array_reshape(test_images, c(10000, 28 * 28))
+test_images <- test_images / 255
+
+# make cat
+train_labels <- to_categorical(train_labels)
+test_labels <- to_categorical(test_labels)
+
+```
+
+Using Keras we can add layers to our network.
+From our basic knowledge of neural networks we know we need an input layer (the pixels), a hidden layer to distill relevant information from these pixels of the input layer (learning is possible by updating our weights using back propagation based on our loss function and optimiser) which will feed into our final output layer which should have as many nodes as there are classes (ten digits; 0, 1, 2 ... 9).
+See the comments in the code chunk for extra detail.   
+
+```{r}
+# Keras Model composed of a linear stack of layers
+network <- keras_model_sequential() %>%
+  # 28 times 28 equals 784 pixels
+  # the units argument gives the dimensionality of the output space
+  # a sort of feature space, thus we go from 784 pixels to 512 features
+  # we are distilling information in our representational layer
+  # Why 512 nodes? Dunno but it's between the input and output layer
+  layer_dense(units = 512, activation = "relu", input_shape = c(28*28)) %>%
+  # ten digits to output, we use softmax to give ten probability scores
+  # summing to one, we can predict the digit with the highest proability
+  layer_dense(units = 10, activation = "softmax")
+```
+
+The dense layers are fully connected, there is a direct link between every pair of nodes (for available activation functions see [here](https://keras.io/activations/)).
+We need to train a lot of weights (parameters)!
+
+```{r}
+str(network)
+```
+
+Prior to fitting the model to the training data we must configure it by specifying what optimiser and loss function to use.
+
+```{r}
+network %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+We are now ready to fit the model to the training data, for a fixed number of iterations on the dataset, in place.
+The `batch_size` specifies the number of samples per gradient update.
+You can use the `view_metrics` argument to watch the training in realtime.
+
+```{r}
+set.seed(1337)
+
+network %>%
+  fit(train_images, train_labels, epochs = 5, batch_size = 128)
+
+```
+
+Wow! You can see how quickly the accuracy is improved and how fast the process is.
+On my machine it took about 10 seconds to run with an accuracy of just under 99% on the training data.
+However, inevitably our model has overfit, let's assess how it performs on data it hasn't seen before.  
+
+```{r}
+metrics <- network %>% evaluate(test_images, test_labels)
+metrics
+
+```
+
+Almost 98%, not bad for the "Hello World!" of machine learning vision tasks.
+It was all put together with a few lines of code.  
+
+As usual in R we can make use of `predict` functionality that could ultimately lead to our model being deployed (albeit the Keras version of it).
+We can also save it as a JSON or other machine readable format for later use.  
+
+```{r}
+network %>% predict_classes(test_images[1:10,])
+```
+
+## Hospital readmissions prediction
+
+Thus far we have simply copied and pasted an example.
+Let's use a dataset we are interested in and attempt to use Keras for prediction of a classification problem based on [hospital data](https://archive.ics.uci.edu/ml/machine-learning-databases/00296/) from the UCI machine learning repo (due to its size we have not put this in the data folder for machine gurning repo).
+We use data that is not pre-processed so we can reflect on this important step.  
+
+The dataset represents ten years (1999-2008) of clinical care at 130 U.S. hospitals.
+Hospital readmission for diabetic patients is a major concern in the United States.
+Predicting those patients that are readmitted within 30 days would be useful for efficiency savings, helping doctors spot patients at risk of being readmitted.  
+
+Searching for this dataset on Rpubs reveals someone who has already tidied it somewhat, so we built on and adapted [their work](https://rpubs.com/datascientiest/237230) to our purpose.
+We also inspected the file by opening it and checking for any dodgy codings of "NA", we found "?" was used and some variables had mostly missing data.  
+
+```{r 2018-03-04-visna, fig.height=12, fig.width=8}
+# author note, use getwwd() when writing to check relative address
+# different relative address in interactive use and when knitting
+diabetes <- readr::read_csv("./data/dataset_diabetes/diabetic_data.csv",
+                            na = c("", "NA", "?", "Unknown/Invalid"))
+
+# review missingness patterns
+extracat::visna(diabetes, type = "b")
+
+```
+
+Race, weight and a few other variables are responsible for most of the missing data, as shown above (see [here](http://www.machinegurning.com/rstats/kaggle_ames_house_prices/) for help interpreting this figure).
+We drop them from our dataset.    
+
+For simplicity, we drop `encounter_id` and `patient_nbr` and assume that every row represents a unique admission to the hospital (not true of course, we could use a recurrent neural network to learn from historical experience of the patient but we simplify things for now).
+
+```{r}
+library(dplyr)
+diab_df <- diabetes %>%
+  select(-race, -weight, -payer_code,
+         -medical_specialty, -diag_1:-diag_3) %>%
+  select(-encounter_id:-patient_nbr) %>%
+  janitor::clean_names()
+
+glimpse(diab_df)
+
+```
+
+Look at the variables.
+Age is not useful in its current format, let's convert it into something infomrative Some of the variables / features are of the wrong type.
+We do some basic tidying below, with the comments explaining what's happening.
+We could also benefit from converting to dummy variables for modelling purposes.
+The caret package can help with this.
+
+```{r}
+# fix age
+diab_df$age <- gsub("[()]", "", diab_df$age)
+diab_df$age <- gsub("[[]]", "", diab_df$age)
+diab_df$age <- gsub("\\[", "", diab_df$age)
+
+# split string to remove hyphen and convert into numeric
+# create new variables then drop uninformative age variables
+diab_df$age_low <- as.numeric(stringr::str_split(diab_df$age, "-", simplify = TRUE)[, 1])
+diab_df$age_high <- as.numeric(stringr::str_split(diab_df$age, "-", simplify = TRUE)[, 2])
+
+diab_df$age_mid <- round((diab_df$age_low + 
+                          diab_df$age_high) / 2, digits = 0)
+
+# drop redundant, keep age mid
+diab_df_aged <- dplyr::select(diab_df,
+                       -age, -age_low, -age_high)
+
+# create target / response variable, make binary
+diab_df_aged$target <- dplyr::if_else(diab_df_aged$readmitted == "<30", 1, 0)
+# drop redundant readmitted, could use later for multiclass prediction
+readmitted <- diab_df_aged$readmitted  # store for later
+diab_df_tgt <- dplyr::select(diab_df_aged, -readmitted)
+
+# glimpse(diab_df_tgt)
+
+# We can examine these character variables more closely using
+# CaVEAt: table is slow
+# for (i in 16:41) {
+#   print("-------------------------")
+# 
+#   print(names(diab_df_tgt[, i]))
+#   print(table(diab_df_tgt[, i]))
+#   
+#   print("-------------------------")
+#   }
+
+# Quite a few are uninformative (i.e. they have zero variance),
+# there's too few instances to learn from
+# and some are "No" for all samples, again uninformative
+# you might as well include a feature that gives their species
+# Googling revealed caret has ?nearZeroVar() but we have some char
+# thus we copy a functino from stacoverflow
+# https://stackoverflow.com/questions/8805298/quickly-remove-zero-variance-variables-from-a-data-frame
+
+rm_zero_var_features <- function(dat) {
+    out <- lapply(dat, function(x) length(unique(x)))
+    want <- which(!out > 1)
+    unlist(want)
+}
+
+# name variables which are zero variance
+diab_df_useless2drop <- rm_zero_var_features(diab_df_tgt)
+# drop them
+diab_df_useless_dropped <- diab_df_tgt[ , c(-diab_df_useless2drop[1],
+                                            -diab_df_useless2drop[2])]
+
+glimpse(diab_df_useless_dropped)
+
+```
+
+```{r}
+# now that we removed these variables which were zero var
+# should be able to use dummyVars
+library(caret)
+# dummify data
+dmy <- dummyVars( ~ ., data = diab_df_useless_dropped)
+trsf <- data.frame(predict(dmy, newdata = diab_df_useless_dropped))
+glimpse(trsf)
+# this has dropped the target variable for some reason
+# corrected, we did have target before the ~ causing it to be dropped
+# interesting
+```
+
+This is problematic as we have falling foul of the dummy variable trap; we have perfect collinearity between some variables, for example `genderFemale` and `genderMale`, if we know one we know the other (see [here](https://amunategui.github.io/dummyVar-Walkthrough/) for more details).
+The fullRank parameter is worth protects us against this.
+Let’s turn on fullRank and try our data frame again.  
+
+```{r}
+# repeat but with fullrank True
+dmy <- dummyVars( ~ ., data = diab_df_useless_dropped,
+                 fullRank = TRUE)
+trsf <- data.frame(predict(dmy, newdata = diab_df_useless_dropped))
+glimpse(trsf)
+```
+
+This reduces our variables or features from 95 to 69 and importantly avoids perfect collinearity in the features.
+In essence perfect collinearity is bad as you are increasing the number of parameters in the model without accruing any extra information.
+It also invalidates some of the assumptions for linear regression and least squares estimation.   
+
+Almost there! Just need to scale some of our variables between zero and one so they don't have excessive effect on our model (bigger numbers would have stronger effect on predicting the response variable).  
+
+```{r}
+# remove NA, as only 3
+# sum(!complete.cases(trsf))
+
+# create function to scale
+range01 <- function(x, ...) {
+  (x - min(x, ...)) / (max(x, ...) - min(x, ...))
+}
+
+diab_scaled <-  trsf %>%
+  na.omit() %>% 
+  purrr::map_df(., range01)
+
+glimpse(diab_scaled)
+```
+
+That was a bit long winded but we've scaled all our variables and removed some of the uninformative and unhelpful variables (some of the `diag` variables could be useful, it would be nice if we could link this dataset or fill in the `NA`s somehow, anyhow we proceed with what we have).
+
+## The Keras Workflow
+
+As in the MNIST example we can follow a workflow:
+
+* Define your training data: input tensors and target tensors.  
+* Define a network of layers (or model) that maps your inputs to your targets.  
+* Configure the learning process by choosing a loss function, an optimizer, and some metrics to monitor.
+* Iterate on your training data by calling the `fit()` method of your model.  
+
+### Defining the training data
+
+Prior to this we inspect the data and notice it is imbalanced (we can revisit this problem later, we continue as is).  
+
+```{r}
+table(diab_scaled$target)
+```
+
+Now we need to get our training data and our labels into the correct format. Let's remind ourselves of what the MNIST data structure was (we probably want tensors right!?).  
+
+```{r}
+str(train_images)
+str(train_labels)
+```
+
+The `train_images` were scaled pixel scores 28 by 28, or a 784 pixels in total for each sample. There were 60,000 samples or rows. The `train_labels` were correspondingly 60,000 samples. The `caret` package and the `CreateDataPartition` is a better approach but we use this here for simplicity.  
+
+```{r}
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(diab_scaled))
+
+## set the seed to make your partition reproductible
+set.seed(1337)
+train_ind <- sample(seq_len(nrow(diab_scaled)), size = smp_size)
+
+# create index
+train <- diab_scaled[train_ind, ]
+test <- diab_scaled[-train_ind, ]
+
+
+train_data <- dplyr::select(train, -target)
+train_labels <- train$target
+test_data <- dplyr::select(test, -target)
+test_labels <- test$target
+
+```
+
+Currently our data is not in the form of tensors. You can’t feed lists of integers into a neural network so we'd better do something about it.
+We also need to convert our labels from integer to numeric, and transform our target attribute from a vector containing values for each class value, to a matrix with a boolean for each class value, and whether or not a given instance has that class value or not.  
+
+```{r}
+# https://www.datacamp.com/community/tutorials/keras-r-deep-learning#prep
+x_train <- as.matrix(train_data)
+dimnames(x_train) <- NULL
+
+x_test <- as.matrix(test_data)
+dimnames(x_test) <- NULL
+
+y_train <- keras::to_categorical(as.numeric(train_labels))
+y_test <- keras::to_categorical(as.numeric(test_labels)) 
+
+head(y_train)
+```
+
+Now we have reached the end of the exploration and pre-processing steps for the hospital data, although we caveat that with we flew through this process and did not apply any expert knowledge, nor did we expect the data as closely as we should have: this blog is meant to be illustrative of using keras. We can now go on to building our neural network with keras!  
+
+## Define the network architecture
+
+Can we predict which patients will be readmitted to hospital within 30 days of discharge? The input data is vectors, and the labels are scalars (1s and 0s): this is the easiest setup we’ll ever encounter (compared to image, video or time series data). For this problem we probably want to use a fully-connected multi layer perceptron (not just because it sounds cool!), as it should perform well for this type of problem. 
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 10, activation = "relu", input_shape = c(69)) %>%
+  layer_dense(units = 2, activation = "softmax")
+```
+
+Note how the output layer creates 2 output values, one for each readmission class (not, or within 30 days).
+The first layer, which contains a somewhat arbritrary 10 hidden nodes (a dimension in the representation space) in the hidden layer, on the other hand, has an `input_shape` of 69.
+This is because our `x_train` has 69 columns.
+
+Having more hidden units (a higher-dimensional representation space) allows your network to learn more complex representations, but it slows things down and may result in overfitting to training data.
+To save on computation time, we use a smaller number to start with than we might otherwise for the purposes of this blog.    
+
+Having the `relu` activation function allows our model to learn non-linear transformations of the input data which would restrict our search through the hypothesis space for a decent representation of the data.
+Imagine you had a piece of blue paper mingled with a yellow piece, not using an activation function (the dense layer would consist of two linear operations) would be like trying to untangle the two pieces of paper with just your forehead.  
+
+The output layer has a sigmoid activation function so we can squash our output to resemble a probability, as this fits the use case better.
+This score between 0 and 1, indicates how likely the sample is to have the target “1”: how likely the patient is to be readmitted within 30 days.
+This also explains why we have just one output node, we just need one number, the probability.  
+
+We can inspect our network:
+
+```{r}
+# Print a summary of a model
+summary(model)
+
+```
+
+### Choose loss function, optimiser and metric
+
+Crossentropy has its origins in [Information Theory](https://en.wikipedia.org/wiki/Information_theory) and measures the distance between probability distributions or, in this case, between the ground-truth distribution and your predictions.
+It's usually a good go-to for probabilities.  
+
+```{r}
+# Compile the model
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+We can create a validation set to track our progress as our model trains, thus we can check it on data it has never seen.
+For simplicity we skip this step here but it is a thing that can be useful.  
+
+### Training the model
+
+We can now train the model for 5 epochs (5 iterations over all samples in the `x_train` and `y_train` tensors), in mini-batches of 512 samples.  
+
+```{r}
+
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 5,
+  batch_size = 512
+)
+```
+
+We can plot the accuracy and the loss of the model through training. We load `ggplot2` so it looks nicer.
+
+```{r 2018-03-04-validate}
+library(ggplot2)
+plot(history)
+```
+
+You might be pretty hyped by the accuracy but hold your horses!
+Let's reflect on how well the null model would perform. What if we just predicted every patient would not be readmitted within 30 days?  
+
+```{r}
+# the number for which we were correct divided by total patients
+sum(y_test[, 1] == 1) / dim(y_test)[1]
+```
+
+Thus our neural network has the same accuracy as this null model!
+Agh! the curse of an imbalanced data set.
+This highlights an important point, it's tempting to get caught up in the wizardry of deep learning, but remember it's not magic, apply your standard thinking to the problem to avoid embaressing outcomes like this (we of course should use a confusion matrix as accuracy is not that useful a measure here but we use it to make the point).  
+
+## Improving the model
+
+We need to penalise the model somehow for simply predicting the modal class (not readmitted) otherwise we will get stuck at this local minima.
+There are a few approaches that spring to mind; rebalance the data with [SMOTE](https://www.jair.org/media/953/live-953-2037-jair.pdf), customise loss function (see alpha gov), change class weights (easier than customising loss function).  
+
+### SMOTE
+
+Considering this [SMOTE blog](http://amunategui.github.io/smote/), our data should be considered a rare event (as < 15%). The general idea of this method is to artificially generate new examples of the minority class using the nearest neighbors of these cases.   
+
+```{r}
+print(prop.table(table(diab_scaled$target)))
+
+```
+
+We go back to our dataframe version to make handling easier.
+The one where everything was scaled. We randomly split the data 
+
+```{r}
+set.seed(255)
+splitIndex <- createDataPartition(diab_scaled$target, p = .50,
+                                  list = FALSE,
+                                  times = 1)
+trainSplit <- diab_scaled[splitIndex,]
+testSplit <- diab_scaled[-splitIndex,]
+ 
+prop.table(table(trainSplit$target))
+```
+
+The outcome balance between both splits is still around 11% therefore representative of the bigger set - we’re in good shape. 
+
+Let’s create extra positive observations using SMOTE.
+We set `perc.over = 100` to double the quantity of positive cases, and set `perc.under = 200` to keep half of what was created as negative cases.
+
+> And I SMOTE his ruin upon the mountain-side. - Gandalf
+
+```{r eval=FALSE}
+library(DMwR)
+trainSplit$target <- as.factor(trainSplit$target)
+trainSplit <- DMwR::SMOTE(target ~ ., trainSplit,
+                    perc.over = 100, perc.under = 200)
+trainSplit$target <- as.numeric(trainSplit$target)
+
+# try using train we have already
+train_smote <- train
+
+train_smote$target <- as_factor(train_smote$target)
+train_smote <- SMOTE(target ~ ., train_smote,
+                    perc.over = 100, perc.under = 200,
+                    k = 5)
+train_smote$target <- as.numeric(train_smote$target)
+```
+
+Fail.
+Unfortunately this is erroring and a quick debug attempt fails.
+Let's try one of our alternatives so we don't have to mess about with the data again.
+We leave this code in our blog as we acknowledge it as a strategy worth investigating further.  
+
+### Custom class weights
+
+Let's penalise the model for guessing zero everytime, we can do that using the `class_weight` argument.
+In essence it makes it more expensive to guess zero each time.
+From the `?fit` and documentation on `class_weight` it looks like we pass it a list.
+We force our algorithm to treat every instance of class 1 (readmission within 30 days) as 9 instances of class 0.    
+
+```{r}
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 5,
+  batch_size = 512,
+  class_weight = list("0" = 1,"1" = 9)
+)
+```
+
+This returns a more realistic accuracy as our model is penalised from just guessing "No readmission" for every patient.  
+
+### Predict labels of test data
+
+```{r}
+# Predict the classes for the test data
+classes <- model %>% predict_classes(x_test, batch_size = 128)
+
+# convert y_test to vector, same dim as classes
+# remember we converted it to a binary matrix before with
+# to_categorical
+y_test_v <- dplyr::if_else(y_test[, 1] == 1, 0, 1, missing = NULL)
+
+# Confusion matrix
+confusionMatrix(data = classes, reference = y_test_v)
+```
+
+As you can see the model is performing poorly but at least it isn't just guessing "No readmission" for every patient.
+It seems our `class_weight` specification has swung things the other way, where by perhaps we are being too hard on them model missing patients that are readmitted the model is creating lots of false positives.  
+
+We can also generate the likelihood of a patient being readmitted within 30 days. For different samples we are more confident of a given outcome.  
+
+```{r}
+model %>% predict(x_test[1:10,])
+```
+
+The model seems to be mostly unsure with likelihoods hovering around 50:50.  
+
+### Model evaluation
+
+```{r}
+# Evaluate on test data and labels
+score <- model %>% evaluate(x_test, y_test, batch_size = 128)
+
+# Print the score
+print(score)
+```
+
+This model is not particularly useful it needs some work.  
+
+## Experimentation and model fine tuning
+
+As you explore deep learning don't be dissapointed that things weren't as easy as with the MNIST data set. We need to work for our improvements in our model, we have a few options.  
+
+* Change the number of hidden layers  
+* Adjust the number of nodes in each hidden layer  
+
+Given our data set isn't too small this might be an OK approach (overfitting might be less of a problem than with a small data problem).  
+
+Let's add another layer (we should change one thing at a time so we can see the impact on accuracy).
+We create another pre-processing layer prior to our 10 unit hidden layer we had previously.
+It will take longer to run but we might uncover more complicated features within the data that we might of missed before (or we might overfit).  
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 30, activation = "relu", input_shape = c(69)) %>%
+  layer_dense(units = 10, activation = "relu") %>%
+  layer_dense(units = 2, activation = "softmax")
+
+# Compile the model
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 10,
+  batch_size = 512,
+  class_weight = list("0" = 1,"1" = 9)
+)
+
+# Evaluate on test data and labels
+score <- model %>% evaluate(x_test, y_test, batch_size = 128)
+# Print the score
+print(score)
+
+# Predict the classes for the test data
+classes <- model %>% predict_classes(x_test, batch_size = 128)
+# Confusion matrix
+confusionMatrix(classes, y_test_v)
+
+```
+
+We perform better on the test data this time round with a 20% improvement compared to the simpler network.
+However we are still missing two thirds of the readmitted patients and creating more work for ourselves by flagging non-readmitted patients as a readmission risk four times more than the real risk ones.    
+
+### Twisting the knobs
+
+Not bad for a first go and there are other options which include:
+
+* Fine tune optimiser  
+* Reduce the learning rate  
+* Adjusting the batch site and number of epochs  
+
+## Saving your model
+
+You can save your model using the `save_model_hdf5()` function as well as a few other options.  
+
+## Learning from others
+
+This field moves fast and its important to consult the literature for good setups.
+For example a recent paper looked at this kind of problem, let's use their method and model architecture (Jamie et al., 2017).
+Read the model training and evaluation section from this open [PLOS ONE paper](https://doi.org/10.1371/journal.pone.0181173) for a description of the design decisions taking and why.    
+
+We can combine it with our fine tuning we used earlier as this is a different data set and problem.  
+
+```{r}
+set.seed(1337)
+model <- keras_model_sequential() %>%
+  # one dense laye rhalf the nodes of the input
+  # drop out layer between each layer
+  layer_dense(units = 35, activation = "relu",
+              input_shape = c(69)) %>%
+  layer_dropout(rate = 1) %>%
+  layer_dense(units = 5, activation = "relu") %>%
+  layer_dropout(rate = 1) %>%
+  layer_dense(units = 2, activation = "softmax")
+
+# Compile the model
+# adam optimiser
+model %>% compile(
+  optimizer = "adam",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+# epoch and batch size changed
+# method didnt specify class weight
+history <- model %>% fit(
+  x_train,
+  y_train,
+  epochs = 5,
+  batch_size = 64,
+  class_weight = list("0" = 1,"1" = 9)
+)
+
+# Evaluate on test data and labels
+score <- model %>% evaluate(x_test, y_test, batch_size = 128)
+# Print the score
+print(score)
+
+# Predict the classes for the test data
+classes <- model %>% predict_classes(x_test, batch_size = 128)
+# Confusion matrix
+confusionMatrix(classes, y_test_v)
+```
+
+This compares to the aforementioned paper's sensitivity score of 59% for neural network and 50% for traditional hospital risk modelling methods in the United States.  
+
+## Multiclass modelling
+
+Using the same data we could see how we perform in predicting "No readmission", less than 30 days readmision or greater than 30 days readmission.
+This would require a different loss function (categorical crossentropy). We leave this to you, the reader to explore.    
+
+## Conclusion
+
+Keras provides a simple and powerful LEGO block approach to building a neural network.
+In this blog we demonstrated how to go from a reasonably clean patient data set to a model that predicted the readmission rates of those patients albeit poorly.  
+
+## References
+
+* Strack, B., Deshazo, J. P., Gennings, C., Olmo, J. L., Ventura, S., Cios, K. J., & Clore, J. N. (2014). Impact of HbA1c Measurement on Hospital Readmission Rates : Analysis of 70 , 000 Clinical Database Patient Records. Biomed Research International, 2014, 1–11. https://doi.org/10.1155/2014/781670  
+* Billings, J., Blunt, I., Steventon, A., Georghiou, T., Lewis, G., & Bardsley, M. (2012). Development of a predictive model to identify inpatients at risk of re-admission within 30 days of discharge ( PARR-30 ). BMJ Open, 1–10. https://doi.org/10.1136/bmjopen-2012-001667  
+* Jamei, M., Nisnevich, A., Wetchler, E., Sudat, S., & Liu, E. (2017). Predicting all-cause risk of 30-day hospital readmission using artificial neural networks. PLoS ONE, 12(7), 1–14. https://doi.org/10.1371/journal.pone.0181173  
+
+```{r}
+sessionInfo()
+```
+
