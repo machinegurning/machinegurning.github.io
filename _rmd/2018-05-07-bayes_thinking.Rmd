@@ -1,0 +1,202 @@
+---
+title: "Master Bayes in R"
+author: matt_gregory
+comments: yes
+date: '2018-05-07'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "Thinking Bayes"
+published: FALSE
+status: process
+tags:
+ - Bayes
+ - Bayesian
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+Imagine you are responsible for the training budget of an organisation, let's imagine a multi academy trust (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across the public sector and charities, resulting in ineffective spending. This blog post explores that problem of quantifynig impact, updating knowledge with new evidence and deciding when to try something new.  
+
+In some ways this could be considered analgous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip to casino and divvying out the money to your group. They disperse and spend the money how they see fit. They find a one-armed-bandit slot machine and put in a coin, they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win - the students show some improvement in a measurable thing) or they do not (a loss - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been succesful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
+
+There are plenty of great analytics being conducted by schools and charities tring to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)).   
+
+## Start simple
+
+Made-up charity "Kale-and-Yoga" (these are hip, so appropriate to lampoon) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an apporpriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
+
+Assuming history can be used to predict the future (ignoring the problem of induction) the expected value of the intervention efficiency of a random charity can be described. For the moment we ignore any effects of differences between the experimental conditions from which the intervention efficiencies were derived and assume that intervention efficiency of Kale-and-Yoga is described by a mean efficiency and a random error term.  
+
+The first intrevention at a school might look like this:
+
+```{r}
+# load some useful functions
+library(tidyverse)
+
+# make our results reproducible
+set.seed(1997)
+
+# create data where before and after are from the same distribution
+# they vary due to chance
+df <- tibble(student_id = 1:30,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.5, sd = 0.1))
+
+# convert to binary of success (1) or failure (0)
+# has our student improved?!
+df <- df %>%
+  mutate(success = if_else(after > before, 1, 0))
+
+dplyr::glimpse(df)
+```
+
+We can see the impact of chance on our random samples. This is why using statistics is important, otherwise we might consider the intervention to have been effective as it had shown an improvement in students performance. The scores after the intervention are higher. This does not necessarily mean the intervention was effective.  
+
+```{r}
+mean(df$before)
+mean(df$after)
+```
+
+Intervention efficiency is a derived variable. It is assumed to be emergent from a series of independent and identically distributed random variables (X1, X2, X3... Xn; range: success (Student improved) =1, failure (No improvement) = 0), with constant probability of success p. Thus for the experiment we can consider who improved and who didn't or use our `before` and `after` scores. For this post we explore the success or failure, binary nature of data as this tends to be more commons for these types of interventions.   
+
+```{r}
+table(df$success)
+```
+
+We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless. This is likely the case here, but for convenience we pretend that we sampled our school students at random, teh reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate.  
+
+```{r}
+# we need to pass a count of successes x and a count of trials n
+prop.test(x = sum(df$success), n = length(df$success), p = 0.5)
+```
+
+Here we reject the null hypothesis (as the p-value < 0.05; note, distinct from p mentioned earlier, which was the probability of success in a series of Bernoulli trials), giving us the belief that the intervention has improved students' performance in the grit test. However, we know this to be wrong and a false positive, as we have generated the data ourselves from a known distribution.  This demonstrates the importance of continued testing of an intervention because our conclusions from the first experiment could be false positive or negative. Furthermore, an intervention might benefit from the [novelty effect](https://en.wikipedia.org/wiki/Novelty_effect) and students awareness that they are being tested. Gradually through time we should build up an evidence base. This would be greatly sped up if schools across a MAT or a region could share their data and experiences with specific interventions. However, the frequentist framework is not as conducive to this passing on of knowledge (although meta-analyses of the [Cochrane reviews](http://www.cochranelibrary.com/cochrane-database-of-systematic-reviews/index.html) and Education Endowment Fund show the gold standard approaches to this problem).  
+
+### p-values versus confidence interval
+
+An approach, closely related to p-values, is to focus on the precision of an observed result or treatment effect - rather than worrying about whether or not to reject a (frequently arbitrary) null hypothesis. This is done by estimating its confidence interval. Although it may not be immediately obvious, confidence intervals and null hypothesis significance tests are actually facets of exactly the same underlying model - which is why confidence intervals are often used as surrogate tests.   
+
+The confidence interval is most commonly defined as that range which, when attached to a sample statistic, would enclose the true parametric value on a given proportion (1 − α) of occasions. Since α is usually taken as 0.05 (as we do here), we therefore end up with 95% confidence intervals. To think about it another way, a claim to 95% confidence simply means that the researcher has seen one possible interval from a large number of possible ones, from which nineteen out of twenty intervals (on average) contain the true value of the parameter.  
+
+Some statisticians have recommended doing away with p-values altogether, and only quoting the confidence interval for a treatment effect. Others use the confidence interval as a surrogate statistical test, by assessing whether the interval overlaps 0 (if the treatment effect is expressed as a difference) or 1 (if the treatment effect is expressed as a ratio). Typically you will need to adhere to traditional standards of citing the p-value if you seek publication or approval from your peers.  
+
+## Importance of a control group
+
+Imagine your students would of gotten better anyway, as the before and after is seperated by some time where anything could happen (that might have increased their score anyway, without the  Charity's intervention). This time our students are randomly sampled from school and assigned their treatment using a intra-school lottery, making our statistical assumptions more in-line with reality. To make the control commensurate and useful, students are given a green liquid to taste and do some basic stretches.   
+
+```{r}
+# make our results reproducible
+set.seed(1337)
+
+# create data where before and after are from different distributions
+# they vary due to non-stationary distribution
+# the control helps us account for this
+df <- bind_rows(
+  tibble(student_id = 1:30,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.6, sd = 0.1),
+             treatment = "kale-and-yoga"), 
+  tibble(student_id = 31:60,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.6, sd = 0.1),
+             treatment = "control")
+             ) %>%
+  mutate(school = "Grange Hill") %>%
+  # convert to factors
+  mutate(treatment = as.factor(treatment),
+         school = as.factor(school)) %>%
+  # convert to binary of success (1) or failure (0)
+  # has our student improved?!
+  mutate(success = if_else(after > before, 1, 0))
+  
+glimpse(df)
+```
+
+Without the control the `treatment = kale-and-yoga` looks promising. However, when considering that students on the control programme showed similar improvement at much reduced cost, we question its value.  
+
+```{r}
+table(df$treatment, df$success)
+```
+
+We all have bias and pre-held beliefs, we might be willing the novel new approach to beat a "boring" and traditional approach. The age of a practice does not predict its efficacy, it's fallacious to reason so (although their may be some correlation in efficacy if the scientific method is used for selection).  
+
+We need statistics to help us here. Which is better A or B? Or the intervention, versus the control or the current best practice.  
+
+```{r}
+# we need to pass a count of successes x and a count of trials n
+# given our data has been ordered by studentid and treatment we can use the row number to filter
+prop.test(
+  x = c(
+    sum(df[1:30, "success"]), # 1:30 gets our kale
+    sum(df[31:60, "success"])
+    ),
+  n = c(
+    nrow(df[1:30, "success"]), # 31:60 gets our control
+    nrow(df[31:60, "success"])
+            )
+  )
+```
+
+Given the extra information in the control treatment, we can control for the students having improved anyway. We accept the null hypothesis for now, the evidence suggests the intervention does not improve the performance of our students in the grit-test relative to the control.  
+
+Alternatively we can use 
+
+## Comparing a few interventions
+
+Now imagine you need to make this type of comparison of intervention efficacy across a range of charitable interventions. You risk further false positives and false negatives due to multiple testing. This time we will hide the code for creating the data by setting the Rmarkdown chunk `echo` option to `FALSE`. Now you face the uncertainty of the real world.  
+
+However, before proceeding, we add a control group and see its impact on our earlier findings. Imagine we had a group of students
+
+```{r}
+df <- df %>%
+  mutate(charity = "kale-and-yoga", school = "A", classroom = "hufflepuff")
+
+df
+```
+
+
+The old fashioned way of modelling these sorts of success and failure data was to use percentage as the response variable. There are four problems with this approach:
+
+* the errors are not homoschedastic (homogeneity of variance)  
+* the variance is not constant (it's npq)  
+* the response is bounded between 0 and 1 (as probability)  
+* or intuitively by calculating the percentage we lose information of n, the sample size from which the proportion was estimated  
+
+The trick is to do a weighted regression using the individual sample sizes as weights and the logit link funciton to ensure linearity.
+
+For comparison of two samples of proportions, like in [A/B testing](https://www.machinegurning.com/rstats/bayes_r/), use `prop.test`. Alternatively use a [Bayesian approach](http://www.sumsar.net/blog/2014/06/bayesian-first-aid-prop-test/), like`bayes.prop.test` which you might prefer for explaining the results to regular humans.  
+
+For frequentist approach we use a `glm` with logit link function, with the family argument set to binomial. This is described in detail in the [R book by Mick Crawley](https://onlinelibrary.wiley.com/doi/book/10.1002/9780470515075) so we summarise it in brief here.  
+
+To get started create a two-column object for the response, using `cbind` to join together the two vectors of successes and failures.  
+
+`y <- cbind(success, failure)`  
+`model <- glm(y ~ charity_intervention, family = "binomial")`  
+
+Check for overdispersion, residual deviance > residual df. If overdispersed set family to quasibinomial. The linear predictor is in logits and you can back transform. Proceed with model simplificaiton from maximal to minimal. As our intervention type is categorical variable we use F-test to compare the original and simplified models.  
+
+`anova(model, model2, test ="F")`  
+
+
+
+## References
+
+* Michael J. Crawley, 2007, The R Book. John Wiley & Sons.  
+
+
+
+```{r}
+sessionInfo()
+```
