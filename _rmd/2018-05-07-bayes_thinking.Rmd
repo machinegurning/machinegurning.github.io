@@ -1,11 +1,11 @@
 ---
-title: "Master Bayes in R"
+title: "Assessing intervention efficacy"
 author: matt_gregory
 comments: yes
 date: '2018-05-07'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
-excerpt: "Thinking Bayes"
+excerpt: "Some interventions just do nothing"
 published: FALSE
 status: process
 tags:
@@ -35,7 +35,7 @@ There are plenty of great analytics being conducted by schools and charities tri
 
 ## Start simple
 
-Made-up charity "Kale-and-Yoga" (these are hip, so appropriate to lampoon) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an apporpriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
+Made-up charity "Kale-and-Yoga" (these are hip, so appropriate to lampoon; this post does not use any real data) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an apporpriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
 
 Assuming history can be used to predict the future (ignoring the problem of induction) the expected value of the intervention efficiency of a random charity can be described. For the moment we ignore any effects of differences between the experimental conditions from which the intervention efficiencies were derived and assume that intervention efficiency of Kale-and-Yoga is described by a mean efficiency and a random error term.  
 
@@ -69,13 +69,13 @@ mean(df$before)
 mean(df$after)
 ```
 
-Intervention efficiency is a derived variable. It is assumed to be emergent from a series of independent and identically distributed random variables (X1, X2, X3... Xn; range: success (Student improved) =1, failure (No improvement) = 0), with constant probability of success p. Thus for the experiment we can consider who improved and who didn't or use our `before` and `after` scores. For this post we explore the success or failure, binary nature of data as this tends to be more commons for these types of interventions.   
+Intervention efficiency is a derived variable (`success`). It is assumed to be emergent from a series of independent and identically distributed random variables (X1, X2, X3... Xn; range: success (Student improved) =1, failure (No improvement) = 0), with constant probability of success p. Thus for the experiment we can consider who improved and who didn't or use our `before` and `after` scores. For this post we explore the success or failure, binary nature of data as this tends to be more commons for these types of interventions (are our students really i.i.d.?). Note how this contrasts to Poisson count data, where we know how many times an event occured, but not how many times it did not occur.   
 
 ```{r}
 table(df$success)
 ```
 
-We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless. This is likely the case here, but for convenience we pretend that we sampled our school students at random, teh reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate.  
+We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless. This is likely the case here, but for convenience we pretend that we sampled our school students at random, the reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate. (Note: we also lost information by transforming our response variable, which could have been the difference in before and after score, rather than a less informative binary variable; we did that for the purposes of this tutorial).  
 
 ```{r}
 # we need to pass a count of successes x and a count of trials n
@@ -83,6 +83,8 @@ prop.test(x = sum(df$success), n = length(df$success), p = 0.5)
 ```
 
 Here we reject the null hypothesis (as the p-value < 0.05; note, distinct from p mentioned earlier, which was the probability of success in a series of Bernoulli trials), giving us the belief that the intervention has improved students' performance in the grit test. However, we know this to be wrong and a false positive, as we have generated the data ourselves from a known distribution.  This demonstrates the importance of continued testing of an intervention because our conclusions from the first experiment could be false positive or negative. Furthermore, an intervention might benefit from the [novelty effect](https://en.wikipedia.org/wiki/Novelty_effect) and students awareness that they are being tested. Gradually through time we should build up an evidence base. This would be greatly sped up if schools across a MAT or a region could share their data and experiences with specific interventions. However, the frequentist framework is not as conducive to this passing on of knowledge (although meta-analyses of the [Cochrane reviews](http://www.cochranelibrary.com/cochrane-database-of-systematic-reviews/index.html) and Education Endowment Fund show the gold standard approaches to this problem).  
+
+For a comprehensive list of methods, and the functions to carry them out in R, see the [proportion](https://www.sciencedirect.com/science/article/pii/S2352711017300018#f000005) package.  
 
 ### p-values versus confidence interval
 
@@ -92,9 +94,130 @@ The confidence interval is most commonly defined as that range which, when attac
 
 Some statisticians have recommended doing away with p-values altogether, and only quoting the confidence interval for a treatment effect. Others use the confidence interval as a surrogate statistical test, by assessing whether the interval overlaps 0 (if the treatment effect is expressed as a difference) or 1 (if the treatment effect is expressed as a ratio). Typically you will need to adhere to traditional standards of citing the p-value if you seek publication or approval from your peers.  
 
+### Bayes approach
+
+We care about what information can be extracted from the data. We want to know how wide an interval must be, given your specific data, in order to contain a certain parameter with some pre-selected probability. 
+
+```{r}
+# useful package for learning Bayes with plenty of examples
+library(LearnBayes)
+```
+
+Our workflow involves building a prior distribution that matches our knowledge, we then update this knowledge with data to create a posterior distribution of our new understanding of the world.  
+
+#### Constructing a beta prior
+
+Suppose we are interested in the proportion, p, of students that improve their grit score after an intervention. The function `bayes.select` is a convenient tool for specifying a beta prior based on knowledge of two prior quantiles. Suppose my prior median for the proportion of improving students is `0.5` and my 75th percentile is `.6` based on my historical data of students' grit scores the previous year.    
+
+We need to convert this knowledge into a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution). The beta disitribution has two shape parameters (called alpha and beta). We use the convenientt `beta.select` to work this out for us.  
+
+```{r}
+beta.par <- beta.select(list(p = 0.5, x = 0.5), list( p = 0.75, x = .6))
+beta.par
+```
+
+A beta(`r beta.par`) prior matches this prior information.  
+
+#### Updating with data
+
+Given our earlier `r nrow(df)` observations (there were `r sum(df$success)` successes and `r nrow(df) - sum(df$success)` failures). The posterior distribution is therefore beta with shape parameters  `r beta.par[1]` + `r sum(df$success)` and `r beta.par[2]` + `r nrow(df) - sum(df$success)`. See how this is simply us updating the prior with the data (likelihood) to create the posterior.  
+
+The `triplot` function shows the prior, likelihood, and posterior on the same display; the inputs are the vector of prior parameters and the data vector.  
+
+```{r 2018-05-07-triplot-informative}
+
+triplot(prior = beta.par, 
+        data =  c(sum(
+          df$success),
+          nrow(df) - sum(df$success)))
+```
+
+This visual representation is very useful and intuitive. The posterior refelects our updated belief for the interventions efficacy given our informative prior (typically you would use an uninformative or flat prior; shown in the code chunk below).  
+
+```{r 2018-05-07-triplot-uninformative, eval=FALSE}
+# Jeffrey's uniformative prior, alpha = 0.5, beta = 0.5
+triplot(c(0.5, 0.5), c(sum(
+  df$success),
+  nrow(df) - sum(df$success)))
+```
+
+#### Simulating from Posterior to Perform Inference
+
+From `LearnBayes::BinomialInference` vignette.  
+
+One can perform inference about the proportion p by simulating a large number of draws from the posterior and summarizing the simulated sample. Here the `rbeta` function is used to simulate from the beta posterior and the quantile function is used to construct a 90 percent probability interval for p.
+
+```{r}
+beta.post.par <- beta.par + c(sum(
+  df$success),
+  nrow(df) - sum(df$success))
+
+post.sample <- rbeta(1000, beta.post.par[1], beta.post.par[2])
+quantile(post.sample, c(0.05, 0.95))
+```
+
+Similar to the frequentist approach our credible interval does not contain p = 0.5.  
+
+#### Collecting more data
+
+Impressed by this data (partly due to experimental design constraints), the school might commission another intervention with this charity. However, this shouldn't be the end of the story, the school and charity should continue to collect data for impact assessment. The charity could adjust its programme if it consistently does not impact the thing they want it to (or change their claim i.e. "Kale-and-Yoga" reduces the body mass index of students) and the school can ensure it is spending its money on effective evidence-based-interventions only.  
+
+With the Bayesian approach it's easy to update our knowledge. Our new prior will be our previous posterior. The likelihood will be the data collected during our next experiment. From these two we will generate our new posterior. Imagine we repeated the experiment with more students by randomly sampling students across our school network, exposing them to the "Kale-and-Yoga" then assessing whether they got grittier or not.      
+
+```{r 2018-05-07-triplot-next}
+
+triplot(prior = beta.post.par, 
+        data = c(50, 50)
+        )
+```
+
+Thus we can accumulate knowledge and build on it in a more straightforward way compared to the Frequentist approach. This allows us to spot that the intervention did not seem to do so well this time. We also benefit from being able to apply some expert knowledge in the form of a prior.  
+
+#### Building a business case by predicting a future sample
+
+To assess impact we need to be able to compare the cost of doing an intervention with the predicted gain in benefits. Often these might be somewhat intangible and it can be hard to assign economic value to a cost or benefit. Economists have lots of strategies to tackle this but even a back-of-the-envelope can be informative and should be part of the business case for how an organisation like a school decides on what interventions to pay for.  
+Suppose we want to predict the number of students who improve their grit-score following the intervention. To do the programme costs £200 per student. We estimate that improving the grit-score of a student (if this can be shown to be a permanent change) will improve exam success and lifetime performance to the value of £300 (working not shown; made-up thought experiment). Thus if we run the intervention on 50 students from our school what's our expected cost-benefit ratio?  
+
+We know the cost, we know the number of students and we know the benefit. We can work out the minimum number of students that need to improve to work out our break even point. 
+
+```{r}
+students <- 50 # future sample size
+s <- 0:students # vector of number of successes in future experiment
+cost <- 200 * students
+benefit <- 300
+break_even <- cost / benefit # need more than 34 students to break even
+
+```
+
+We need more than `r ceiling(break_even)` students to "succeed" to break even.   
+
+```{r 2018-05-07-triplot-costing}
+# simulation
+pred.probs <- pbetap(beta.post.par, students, s)
+plot(s, pred.probs, type = "h", 
+     ylab = "Probability", xlab = "Total number of successes")
+
+```
+
+We have the probabilty of getting each number of successes between 0 and 50. We can add up some of these probabilities to answer our question, what is the probability of getting more than `r ceiling(break_even)` successes?  
+
+```{r}
+# range is from 0 to 50
+length(s)
+
+# thus for 34 we need to reference from 34 - 1
+sum(pred.probs[(34 + 1):(50 + 1)])
+#sum(pred.probs[33:50])
+
+```
+
+Thus there is a `r round(sum(pred.probs[(34+1):(51+1)]), 2)`% chance the school will break even in paying for this Charity's intervention. Seems a bit risky!  
+
 ## Importance of a control group
 
-Imagine your students would of gotten better anyway, as the before and after is seperated by some time where anything could happen (that might have increased their score anyway, without the  Charity's intervention). This time our students are randomly sampled from school and assigned their treatment using a intra-school lottery, making our statistical assumptions more in-line with reality. To make the control commensurate and useful, students are given a green liquid to taste and do some basic stretches.   
+The above example was somewhat contrived and missed a non-trivial feature of science; comparison to a control group. Any intervention costs money, if the intervention costs more than the benefit then it is more cost effective to do nothing. In even worse scenarios organisations might pay for interventions that are detrimental to a students performance. There is the opportunity cost of doing the thing.  
+
+Imagine your students would of gotten better anyway, as the before and after is seperated by some time where anything could happen (that might have increased their score anyway, without the  Charity's intervention). This time our students are randomly sampled from school and assigned their treatment using an intra-school lottery, making our statistical assumptions more in-line with reality. To make the control commensurate and useful, students are given a green liquid to taste and do some basic stretches by a non-yogi (there should be an additional control of do nothing (business as usual) but we leave that out here for simplicity).   
 
 ```{r}
 # make our results reproducible
@@ -130,7 +253,7 @@ Without the control the `treatment = kale-and-yoga` looks promising. However, wh
 table(df$treatment, df$success)
 ```
 
-We all have bias and pre-held beliefs, we might be willing the novel new approach to beat a "boring" and traditional approach. The age of a practice does not predict its efficacy, it's fallacious to reason so (although their may be some correlation in efficacy if the scientific method is used for selection).  
+We all have bias and pre-held beliefs, we might be willing the novel new approach to beat a "boring" and traditional approach. The age of a practice does not predict its efficacy, it's fallacious to reason so (although their may be some correlation in efficacy if the scientific method is used for selection; good ideas might stick around, although bad ideas can persist also).  
 
 We need statistics to help us here. Which is better A or B? Or the intervention, versus the control or the current best practice.  
 
@@ -151,21 +274,62 @@ prop.test(
 
 Given the extra information in the control treatment, we can control for the students having improved anyway. We accept the null hypothesis for now, the evidence suggests the intervention does not improve the performance of our students in the grit-test relative to the control.  
 
-Alternatively we can use 
+In the above example, we lumped together our successes and failures and then analysed the total counts of successful students (those that improved grit scores). The question you may need to ask yourself when considering to treat the data as proportion data or binary response is: *do I have unique values of one or more explanatory variable for each and every individual case?* In our example above, we didn't as students only varied in their intervention type, all else was assumed to be constant. As the answer is no, then there is nothing to be gained and we should reduce our data by aggregating the counts to the resolution at which each *count* does have a unique set of explanatory variables.  
 
-## Comparing a few interventions
+## Comparing a few interventions across schools
 
-Now imagine you need to make this type of comparison of intervention efficacy across a range of charitable interventions. You risk further false positives and false negatives due to multiple testing. This time we will hide the code for creating the data by setting the Rmarkdown chunk `echo` option to `FALSE`. Now you face the uncertainty of the real world.  
+Now imagine you need to make this type of comparison of intervention efficacy across a range of charitable interventions (we pick an intervention that has some support on [EEF website](https://educationendowmentfoundation.org.uk/evidence-summaries/teaching-learning-toolkit/outdoor-adventure-learning/)) as well as our control group (do nothing; go about your lives) and across schools. You risk further false positives and false negatives due to [multiple testing](https://en.wikipedia.org/wiki/Multiple_comparisons_problem). This time we will hide the code for creating the data by setting the Rmarkdown chunk `echo` option to `FALSE`. Now you face the uncertainty of the real world.  
 
-However, before proceeding, we add a control group and see its impact on our earlier findings. Imagine we had a group of students
 
-```{r}
-df <- df %>%
-  mutate(charity = "kale-and-yoga", school = "A", classroom = "hufflepuff")
+```{r echo=FALSE}
+set.seed(1337)
 
-df
+# create data where before and after are from different distributions
+# they vary due to non-stationary distribution
+# the control helps us account for this
+df <- bind_rows(
+  tibble(student_id = 1:30,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.62, sd = 0.1),
+             treatment = "kale-and-yoga", school = "A"), 
+  tibble(student_id = 31:60,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.6, sd = 0.1),
+             treatment = "control", school = "A"),
+  tibble(student_id = 1:30,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.62, sd = 0.2),
+             treatment = "kale-and-yoga", school = "B"), 
+  tibble(student_id = 31:60,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.6, sd = 0.2),
+             treatment = "control", school = "B"),
+  tibble(student_id = 1:30,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.8, sd = 0.1),
+             treatment = "desert-island", school = "A"), 
+  tibble(student_id = 31:60,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.6, sd = 0.1),
+             treatment = "control", school = "A"),
+  tibble(student_id = 1:30,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.7, sd = 0.2),
+             treatment = "desert-island", school = "B"), 
+  tibble(student_id = 31:60,
+             before = rnorm(30, mean = 0.5, sd = 0.1),
+             after = rnorm(30, mean = 0.6, sd = 0.2),
+             treatment = "control", school = "B")
+             ) %>%
+  # convert to factors
+  mutate(treatment = as.factor(treatment),
+         school = as.factor(school)) %>%
+  # convert to binary of success (1) or failure (0)
+  # has our student improved?!
+  mutate(success = if_else(after > before, 1, 0))
+
+summary(df)
 ```
-
 
 The old fashioned way of modelling these sorts of success and failure data was to use percentage as the response variable. There are four problems with this approach:
 
@@ -178,9 +342,17 @@ The trick is to do a weighted regression using the individual sample sizes as we
 
 For comparison of two samples of proportions, like in [A/B testing](https://www.machinegurning.com/rstats/bayes_r/), use `prop.test`. Alternatively use a [Bayesian approach](http://www.sumsar.net/blog/2014/06/bayesian-first-aid-prop-test/), like`bayes.prop.test` which you might prefer for explaining the results to regular humans.  
 
-For frequentist approach we use a `glm` with logit link function, with the family argument set to binomial. This is described in detail in the [R book by Mick Crawley](https://onlinelibrary.wiley.com/doi/book/10.1002/9780470515075) so we summarise it in brief here.  
+For frequentist approach we use a `glm` (pronounced glim) with logit link function, with the family argument set to binomial. This is described in detail in the [R book by Mick Crawley](https://onlinelibrary.wiley.com/doi/book/10.1002/9780470515075) so we summarise it in brief here. A generalised linear model has three important properties:  
 
-To get started create a two-column object for the response, using `cbind` to join together the two vectors of successes and failures.  
+* the error structure  
+* the linear predictor  
+* the link function  
+
+These are lkely to be unfamiliar concepts, that's OK, but the ideas behind them are straighforward, explained clearly in Crawley's R book (this book formed part of my first R course at post-graduate level).
+
+To get started create a two-column object for the response, using `cbind` to join together the two vectors of successes and failures. Prior to this we must condense the data down, at the moment we represent it at the level of each student, we can collapse this down into number of successes and failures for each treatment and school combination. These could be neighbouring schools in a MAT that are keen to share knowledge with one-another as to the efficacy of these interventions.  
+
+
 
 `y <- cbind(success, failure)`  
 `model <- glm(y ~ charity_intervention, family = "binomial")`  
