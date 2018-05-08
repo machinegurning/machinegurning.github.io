@@ -27,9 +27,9 @@ knitr::opts_chunk$set(
   )
 ```
 
-Imagine you are responsible for the training budget of an organisation, let's imagine a multi academy trust (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across the public sector and charities, resulting in ineffective spending. This blog post explores that problem of quantifynig impact, updating knowledge with new evidence and deciding when to try something new.  
+Imagine you are responsible for the training budget of an organisation, let's say a multi academy trust (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across organisations, the public-and-private sector, and charities, resulting in ineffective spending. This blog post explores the problem of quantifying impact, updating knowledge with new evidence and deciding when to try something new.  
 
-In some ways this could be considered analgous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip to casino and divvying out the money to your group. They disperse and spend the money how they see fit. They find a one-armed-bandit slot machine and put in a coin, they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win - the students show some improvement in a measurable thing) or they do not (a loss - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been succesful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
+In some ways this could be considered analgous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip to a casino and divvying out the money to your group. They disperse and spend the money how they see fit. They find a one-armed-bandit slot machine and put in a coin, they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win - the students show some improvement in a measurable thing) or they do not (a loss - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been succesful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
 
 There are plenty of great analytics being conducted by schools and charities tring to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)).   
 
@@ -171,7 +171,7 @@ triplot(prior = beta.post.par,
         )
 ```
 
-Thus we can accumulate knowledge and build on it in a more straightforward way compared to the Frequentist approach. This allows us to spot that the intervention did not seem to do so well this time. We also benefit from being able to apply some expert knowledge in the form of a prior.  
+Thus we can accumulate knowledge and build on it in a more straightforward way compared to the Frequentist approach. In the Bayesian world, the prior "pulls back" on any point estimates, and the updated posterior distribution applies to inference at any time and requires no complex sample space considerations. This allows us to spot that the intervention did not seem to do so well this time. We also benefit from being able to apply some expert knowledge in the form of a prior.  
 
 #### Building a business case by predicting a future sample
 
@@ -350,24 +350,77 @@ For frequentist approach we use a `glm` (pronounced glim) with logit link functi
 
 These are lkely to be unfamiliar concepts, that's OK, but the ideas behind them are straighforward, explained clearly in Crawley's R book (this book formed part of my first R course at post-graduate level).
 
-To get started create a two-column object for the response, using `cbind` to join together the two vectors of successes and failures. Prior to this we must condense the data down, at the moment we represent it at the level of each student, we can collapse this down into number of successes and failures for each treatment and school combination. These could be neighbouring schools in a MAT that are keen to share knowledge with one-another as to the efficacy of these interventions.  
+First we must condense the data down, at the moment we represent it at the level of each student, we can collapse this down into number of successes and failures for each treatment and school combination. These could be neighbouring schools in a MAT that are keen to share knowledge with one-another as to the efficacy of these interventions. Then we create a two-column object for the response, using `cbind` to join together the two vectors of successes and failures.  
 
+```{r}
+# note, as our controls are assumed to be the same for both interventions, they are grouped together
+# this might not always be true
+df2 <- df %>% 
+  select(-student_id, -before, -after) %>%
+  group_by(school, treatment)  %>% 
+  summarise(n = n())
 
+df2
+```
 
-`y <- cbind(success, failure)`  
-`model <- glm(y ~ charity_intervention, family = "binomial")`  
+We want variables of success and failure, so that we can bind them together to create our response variable.  
 
-Check for overdispersion, residual deviance > residual df. If overdispersed set family to quasibinomial. The linear predictor is in logits and you can back transform. Proceed with model simplificaiton from maximal to minimal. As our intervention type is categorical variable we use F-test to compare the original and simplified models.  
+```{r}
+# count successes and failures by summing logical
+df3 <- df %>%
+  select(-student_id, -before, -after) %>%
+  group_by(school, treatment) %>%
+  summarise(s = sum(success == 1), failures = sum(success == 0))
 
-`anova(model, model2, test ="F")`  
+df3
+```
 
+We do that within the model specification. We start with an additive model ignoring the interaction term between the treatment used at each school and the proportion of students "succeeding" (improving their grit-score) (this is done to speed up proceedings; typically you should start with the maximal model and work backwards through model simplification).  
+
+```{r}
+m1 <- glm(cbind(s, failures) ~ school + treatment, data = df3, family = "binomial")
+summary(m1)
+```
+
+Hold your horses prior to interpretation. First we check for overdispersion, residual deviance > residual df. If overdispersed set family to quasibinomial.   
+
+```{r}
+m2 <- glm(cbind(s, failures) ~ school + treatment, data = df3, family = "quasibinomial")
+summary(m2)
+```
+
+The linear predictor is in logits and you can back transform. Proceed with model simplificaiton from maximal to minimal. As our intervention type is categorical variable we use F-test to compare the original and simplified models.  
+
+```{r}
+m3 <- update(m2, ~.-school)
+anova(m2, m3, test = "F")
+```
+
+The `school` is not informative in our model and is not signficiant. There is no compelling evidence that the two different schools respond differently to the `treatment`.  
+
+```{r}
+summary(m3)
+```
+
+Again we update by removing `treatment` as there are no significant terms, this will leave the null model of just the grand mean.  
+
+```{r}
+m4 <- update(m3, ~.-treatment)
+anova(m3, m4, test = "F")
+```
+
+Again, `treatment` has non significant effect. However, this doesn't mean there is not a difference between treatments. Thus, it's important for schools to revisit different interventions to be sure that they got a fair run, perhaps they were just unlucky the first few times. While its important to exploit good intrventions, we must also consider how we continue to explore new and old interventions while carefully tracking performance against some agreed metric to ascertain effiacy.  
+
+Visit the machine gurning repo to find out what the data generation process looked like for the above (in `./rmd_/2018-05-07-bayes_thinking.Rmd`).  
+
+### Bayesian approach
 
 
 ## References
 
 * Michael J. Crawley, 2007, The R Book. John Wiley & Sons.  
-
-
+* LearnBayes package pdf in R  
+* proportion package pdf in R  
 
 ```{r}
 sessionInfo()
