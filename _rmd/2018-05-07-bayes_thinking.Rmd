@@ -75,7 +75,7 @@ Intervention efficiency is a derived variable (`success`). It is assumed to be e
 table(df$success)
 ```
 
-We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless. This is likely the case here, but for convenience we pretend that we sampled our school students at random, the reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate. (Note: we also lost information by transforming our response variable, which could have been the difference in before and after score, rather than a less informative binary variable; we did that for the purposes of this tutorial).  
+We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless (Unfortunately this would rule out a great deal of research! We will instead continue on the basis that we must restrict our inference to the group of students 'at hand'). This is likely the case here, but for convenience we pretend that we sampled our school students at random (or limit our inference), the reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate. (Note: we also lost information by transforming our response variable, which could have been the difference in before and after score, rather than a less informative binary variable; we did that for the purposes of this tutorial).  
 
 ```{r}
 # we need to pass a count of successes x and a count of trials n
@@ -409,11 +409,56 @@ m4 <- update(m3, ~.-treatment)
 anova(m3, m4, test = "F")
 ```
 
-Again, `treatment` has non significant effect. However, this doesn't mean there is not a difference between treatments. Thus, it's important for schools to revisit different interventions to be sure that they got a fair run, perhaps they were just unlucky the first few times. While its important to exploit good intrventions, we must also consider how we continue to explore new and old interventions while carefully tracking performance against some agreed metric to ascertain effiacy.  
+Again, `treatment` has non significant effect. However, this doesn't mean there is not a difference between treatments. Thus, it's important for schools to revisit different interventions to be sure that they got a fair run, perhaps they were just unlucky the first few times. While its important to exploit good interventions, we must also consider how we continue to explore new and old interventions while carefully tracking performance against some agreed metric to ascertain effiacy.  
 
 Visit the machine gurning repo to find out what the data generation process looked like for the above (in `./rmd_/2018-05-07-bayes_thinking.Rmd`).  
 
+In some situations we might not always have a control and might simply be comparing two competing charity interventions. In this instance we can treat the situation as an A/B test if the assumptions have been met. The Frequentist and Bayesian approaches to A/B testing is described in a Hacker-News-worthy earlier [blog post](https://www.machinegurning.com/rstats/bayes_r/).
+
 ### Bayesian approach
+
+In this way we could think of each intervention as being a one-armed-bandit in the Casino, with our paying for a student to experience the intervention, our putting a coin in the slot machine and awaiting the payout (or not). The payout could be a positive real number (success or win) or zero (failure or lose). Every time we play the machine we build up information of p, the probability of success, and can compare it to other machines (or Charity interventions; all learning is carried out via the means of trial-and-error and value estimation). Thus we are solving a [multi-armed bandit problem](https://towardsdatascience.com/solving-the-multi-armed-bandit-problem-b72de40db97c) with our schools deciding which slot-machines to gamble on.  
+
+*Thus, how can we design a systematic strategy that adapts to these stochastic rewards?*
+
+What strategy can we use to select the "best" bandit (student intervention) out of a group of bandits (student interventions). What is a unique bandit in this example? Is it every Charity Intervention? Or is it every charity-intervention-school combination? For simplicity we assume that each bandit has the same p regardless of the school it's in.  
+
+We need to exploit good bandits but at the same time explore bandits that are poorly sampled, especially if bandits payout probability are non-stationary.  
+
+We start off by using the `bayesAB` package which we used in a previous post focused on [A/B testing in R](https://www.machinegurning.com/rstats/bayes_r/). This helps us solve a two-armed bandit problem. Imagine we have two interventions to compare
+
+`bayesTest` is the main driver function of the `bayesAB` package. The input takes two vectors of data, corresponding to recipe A and recipe B of an A/B test (the data we have accumulated through this blog post for the two treatments; A - "kale-and-yoga", B - "desert-island").  
+
+```{r}
+kale_and_yoga_binary <- df %>%
+  dplyr::filter(treatment == "kale-and-yoga") %>%
+  select(success)
+  
+desert_island_binary <- df %>%
+  dplyr::filter(treatment == "desert-island") %>%
+  select(success)
+```
+
+We use all available data combined with our beta distribution priors (assuming data is gernerated by Bernoulli i.i.d) to fit a Bayesian model. For our priors we assume an uninformative, Jeffrey's.    
+
+```{r}
+bayesTest(A_data = kale_and_yoga_binary$success, B_data = desert_island_binary$success,
+          priors = list("alpha" = val1,
+                        "beta" = val2),
+          n_samples = 1e+05,
+  distribution = c("bernoulli"))
+```
+
+
+Plan
+
+listen to algorithms chapter for ideas, use upper confidence interval
+This function fits a Bayesian model to your A/B testing sample data. See Details for more information on usage.
+Fit a multi-armed bandit object based on a bayesTest which can serve recommendations and adapt to new data.
+
+```{r}
+
+```
 
 
 ## References
