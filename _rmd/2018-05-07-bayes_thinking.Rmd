@@ -27,15 +27,54 @@ knitr::opts_chunk$set(
   )
 ```
 
-Imagine you are responsible for the training budget of an organisation, let's say a multi academy trust (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across organisations, the public-and-private sector, and charities, resulting in ineffective spending. This blog post explores the problem of quantifying impact, updating knowledge with new evidence and deciding when to try something new.  
+Imagine you are responsible for the training budget of an organisation, let's say a multi academy trust (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across organisations, the public-and-private sector, and charities, resulting in ineffective spending. This blog post explores the problem of quantifying impact, updating knowledge with new evidence and deciding when to try something new. We take inspiration from various sources, including the [medical literature](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3179209/).    
 
 In some ways this could be considered analgous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip to a casino and divvying out the money to your group. They disperse and spend the money how they see fit. They find a one-armed-bandit slot machine and put in a coin, they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win - the students show some improvement in a measurable thing) or they do not (a loss - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been succesful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
 
 There are plenty of great analytics being conducted by schools and charities tring to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)).   
 
+## Randomised Control Trials (RCT) as a Gold Standard 
+
+Often organisations that find themselves in a situation as described above, will becry the fact that they cannot possibly implement an RCT to ascertain causality. That might be the case, due to resource and ethical constraints, but that should not restrict our creativity and thoroughness of thought when considering non-randomised experimental design of the intervention, as there are other sources of bias than non-random allocation of subjects (however, whenever you can use double-blind RCT, do it!).  Looking for inspiration in the medical education field is a natural place to start, given their familiarity with using RCTs, what can we learn from them when this methodology is difficult to implement?  
+
+## Barriers to RCT
+
+Let us start by considering education implementation within any large organisation (continuing with our example for school interventions; our comments are generaliseable). Imagine we want to implement various training programmes or interventions achieve a measurable outcome in our students, what problems might we experience in a large multi-site organisation like a MAT.  
+
+Paraphrased from Sullivan (2011) and adapted to the multi-school context:  
+
+With students moving through educational processes in real time, the difficulties of randomization become immediately clear. Students usually experience charity interventions at different times: those experiencing the intervention later may learn from intervening experiences and no longer be comparable to those experiencing the intervention at an earlier time. Also, students (and / or parents) have the option to refuse randomization and may have to contribute financially a small fee for their child to partciipate on an intervention. Use of a “placebo” is often contraindicated due to parents' sensitivities to schools acting as a place for experimentation. Charitable interventions that operate on multiple-sites, while providing more subjects (with greater power to detect differences) and more generalisability, present challenges due to differences in students. Also, the cost, coordination and data sharing of interventions across multiple sites can be high and public support for education trials may be weak to non-existent (Walser, 2014).  
+
+In addition to feasibility considerations, experts question the applicability of research models, derived from clinical research, for education studies. The highly complex system of education may be a poor fit for the RCT model, which requires clear inclusion/exclusion criteria and interventions administered identically via multiple teachers / facilitators. In education studies, variables can rarely be controlled tightly and blinding of subjects and study personnel may be unethical or impossible or unsupported by the public. Finally, defining the therapeutic intervention in education research is much more difficult than in clinical trials. One cannot “apply curriculum daily” in the same way that one can prescribe a medication.
+
+: Definition 1
+| Source of Error | Solutions |  
+|------:|:-----|  
+| Different sites of intervention | Explicitly describe sources of variability and potential effects on outcomes |  
+| Students at different stages in education and physical development | Concurrent comparison / control group |  
+| Different implementers of intervention | Intervention standard operating procedure; enumerate and describe variations explicitly |  
+| High dropout rate | Describe characteristics of dropouts in as much detail as possible |  
+| No concurrent comparison group | Nonconcurrent control group; describe variables that may be different between the groups and potential effects upon outcomes |  
+| Use of "historical" controls |  Compare characteristics of groups as well as detailed description of previous education experiences. This design may preclude firm conclusions about the intervention |  
+| No control group | Results can suggest hypotheses for further testing with a stronger design. Multiple sources of error preclude firm conclusions |  
+| Control group in same school; [contamination](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4365356/) | Nonconcurrent with intervention period |  
+| Difficult to ["blind"](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2947122/) | Students are aware they are being studied or know their treatment group; use objective assessment  |  
+
+Note how some solutions create new problems that puts you in a Catch-22. In this situation you want to design the experiment to be as least bad as possible; compromise is necessary throughout any scientific endeavour. The important point is to record what you did and why, so that those using your findings will be aware of these limitations.  
+
+## Alternatives to Randomisation
+
+Randomisation is awesome but not always practical. How can we move from opinion-based to qualitative to a more quantitative design of our education research in ascertaining whether the intervention is any good and worth the expense?   
+
+After whetting your appetite on this topic we point you towards Cronbach (2011) for further development of these ideas; they suggest moving towards "pragmatic trials".  
+
+Our key message is, if you can't do a RCT don't turn off your brain! Thinking about your design carefully will reduce your [scientific debt](http://varianceexplained.org/r/scientific-debt/) and build your confidence in what is really happening.  
+
+This also highlights a short-coming in training and education more generally across many industries, particularly assessing impact of educational / training interventions in organisations and schools. These areas are probably ripe for [start-ups to tackle some complex esoteric problems well](https://www.youtube.com/watch?v=9bbS-trc8ys). We expore this theme further with some code, simulated data and statistics.  
+
 ## Start simple
 
-Made-up charity "Kale-and-Yoga" (these are hip, so appropriate to lampoon; this post does not use any real data) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an apporpriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
+Made-up charity "Kale-and-Yoga" (these are both hip, so appropriate to lampoon; this post does not use any real data) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an apporpriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
 
 Assuming history can be used to predict the future (ignoring the problem of induction) the expected value of the intervention efficiency of a random charity can be described. For the moment we ignore any effects of differences between the experimental conditions from which the intervention efficiencies were derived and assume that intervention efficiency of Kale-and-Yoga is described by a mean efficiency and a random error term.  
 
@@ -442,6 +481,8 @@ desert_island_binary <- df %>%
 We use all available data combined with our beta distribution priors (assuming data is gernerated by Bernoulli i.i.d) to fit a Bayesian model. For our priors we assume an uninformative, Jeffrey's.    
 
 ```{r}
+library(bayesAB)
+
 bayesTest(A_data = kale_and_yoga_binary$success, B_data = desert_island_binary$success,
           priors = list("alpha" = val1,
                         "beta" = val2),
@@ -463,10 +504,15 @@ Fit a multi-armed bandit object based on a bayesTest which can serve recommendat
 
 ## References
 
-* Michael J. Crawley, 2007, The R Book. John Wiley & Sons.  
+* [Hardert et al. (1999). Best Evidence Medical Education](https://www.ncbi.nlm.nih.gov/pubmed/21281174) 
+* Crawley, M. (2007). The R Book. John Wiley & Sons.  
 * LearnBayes package pdf in R  
 * proportion package pdf in R  
+* Sullivan, G. M. (2011). Getting Off the “Gold Standard”: Randomized Controlled Trials and Education Research. Journal of Graduate Medical Education, 3(3), 285–289. http://doi.org/10.4300/JGME-D-11-00147.1  
+* Walser, Tamara M. (2014). Quasi-Experiments in Schools: The Case for Historical Cohort Control Groups.
+Practical Assessment, Research & Evaluation, 19(6). Available online:
+http://pareonline.net/getvn.asp?v=19&n=6  
 
 ```{r}
-sessionInfo()
+devtools::session_info()
 ```
