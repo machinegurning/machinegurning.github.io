@@ -1,5 +1,5 @@
 ---
-title: "Assessing intervention efficacy"
+title: "Some interventions just do nothing"
 author: matt_gregory
 comments: yes
 date: '2018-05-07'
@@ -148,7 +148,7 @@ Our workflow involves building a prior distribution that matches our knowledge, 
 
 Suppose we are interested in the proportion, p, of students that improve their grit score after an intervention. The function `bayes.select` is a convenient tool for specifying a beta prior based on knowledge of two prior quantiles. Suppose my prior median for the proportion of improving students is `0.5` and my 75th percentile is `.6` based on my historical data of students' grit scores the previous year.    
 
-We need to convert this knowledge into a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution). The beta disitribution has two shape parameters (called alpha and beta). We use the convenientt `beta.select` to work this out for us.  
+We need to convert this knowledge into a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution). The beta disitribution has two shape parameters (called alpha and beta). We use the convenient `beta.select` to work this out for us. There are alternative methods to estimating the hyper-parameters of your distribution of interest described in David Robinson's excellent book on [Empirical Bayes](http://varianceexplained.org/r/empirical-bayes-book/).    
 
 ```{r}
 beta.par <- beta.select(list(p = 0.5, x = 0.5), list( p = 0.75, x = .6))
@@ -195,7 +195,7 @@ post.sample <- rbeta(1000, beta.post.par[1], beta.post.par[2])
 quantile(post.sample, c(0.05, 0.95))
 ```
 
-Similar to the frequentist approach our credible interval does not contain p = 0.5.  
+Similar to the frequentist approach our credible interval does not contain p = 0.5. What you'll notice is that confidence intervals and credible intervals will tend to converge as n increases and the prior's importance is relatively reduced (by making up a low proportion of the total data).    
 
 #### Collecting more data
 
@@ -452,7 +452,7 @@ Again, `treatment` has non significant effect. However, this doesn't mean there 
 
 Visit the machine gurning repo to find out what the data generation process looked like for the above (in `./rmd_/2018-05-07-bayes_thinking.Rmd`).  
 
-In some situations we might not always have a control and might simply be comparing two competing charity interventions. In this instance we can treat the situation as an A/B test if the assumptions have been met. The Frequentist and Bayesian approaches to A/B testing is described in a Hacker-News-worthy earlier [blog post](https://www.machinegurning.com/rstats/bayes_r/).
+In some situations we might not always have a control and might simply be comparing two competing charity interventions. In this instance we can treat the situation as an A/B test if the assumptions have been met. The Frequentist and Bayesian approaches to A/B testing is described in a Hacker-News-worthy earlier [blog post](https://www.machinegurning.com/rstats/bayes_r/). This is also the "pragmatic trial" that was described in our mini-literature review at the start of the blog post.  
 
 ### Bayesian approach
 
@@ -478,28 +478,70 @@ desert_island_binary <- df %>%
   select(success)
 ```
 
-We use all available data combined with our beta distribution priors (assuming data is gernerated by Bernoulli i.i.d) to fit a Bayesian model. For our priors we assume an uninformative, Jeffrey's.    
+We use all available data combined with our beta distribution priors (assuming data is gernerated by Bernoulli i.i.d) to fit a Bayesian model. For our priors we assume an uninformative, Jeffrey's (alpha and beta set to 1/2).    
+
+When asking the probability kale-and-yoga is better, we’re asking “if I picked a random draw from kale-and-yoga’s distribution and a random draw from desert-island’s, what’s the probability kale-and-yoga is higher”?
 
 ```{r}
+
 library(bayesAB)
 
-bayesTest(A_data = kale_and_yoga_binary$success, B_data = desert_island_binary$success,
-          priors = list("alpha" = val1,
-                        "beta" = val2),
+m1 <- bayesTest(A_data = kale_and_yoga_binary$success, B_data = desert_island_binary$success,
+          priors = list("alpha" = 0.5,
+                        "beta" = 0.5),
           n_samples = 1e+05,
   distribution = c("bernoulli"))
+
+summary(m1)
+
 ```
 
+We could use the `plot` method on this object `m1` which is quite intuitive and provides pretty defaults. Instead we read off the answer to our above question from the `summary`, where the probability that A is better than B (A > B) is 0.6%. We are also reasonably confident that by choosing B over A next time for our students, they will benefit and we only have a 26% chance of them being worse off.  
+
+It's important to continue to collect more data: we fit a multi-armed bandit object based on a `bayesTest` object which can serve recommendations and adapt to new data. Imagine that given our previous results  the `kale-and-yoga` had fallen out of fashion, it's still important for us to continue to collect the data if the intervention is still being used, we also update with the latest students' results to go through the intervention. We update the object with the `setResults()` method.   
+
+```{r}
+set.seed(36912)
+
+# A was kale-and-yoga; B was desert-island
+binomialBandit <- banditize(m1, higher_is_better = TRUE)
+binomialBandit$setResults(list('A' = c(1, 0, 1, 0, 0, 1), 'B' = rbinom(n = 30, size = 1, prob = 0.75)))
+```
+
+The documentation tells us `banditize` is an 'object-oriented' implementation of multi-armed bandits in `bayesAB`. It is useful in conjunction with a Shiny app or Plumber deployment. The object itself is mutable and can adapt/learn from new data without having to re-assign the variable.  
+
+We can see how many times it's been updated by using one of the 5 methods it comes with. This would allow us to keep track.  
+
+```{r}
+binomialBandit$getUpdates()
+```
+
+We can `serveRecipe()` to show the best intervention based on samples from both updated posteriors.  
+
+```{r}
+# desert-island is better than kale-and-yoga, A is better than B
+binomialBandit$serveRecipe()
+```
+
+Returns most up-to-date object that we can again plot or use summary on.  
+
+```{r}
+m2 <- binomialBandit$getBayesTest()
+summary(m2)
+```
+
+This most recent data has updated the Posterior Expected Loss for choosing B over A. There is now even less risk associated with chosen B in favour of A.  
 
 Plan
 
 listen to algorithms chapter for ideas, use upper confidence interval
 This function fits a Bayesian model to your A/B testing sample data. See Details for more information on usage.
-Fit a multi-armed bandit object based on a bayesTest which can serve recommendations and adapt to new data.
+Fit a multi-armed bandit object based on a bayesTest which can serve recommendations and adapt to new data.  
 
 ```{r}
 
 ```
+
 
 
 ## References
@@ -508,6 +550,7 @@ Fit a multi-armed bandit object based on a bayesTest which can serve recommendat
 * Crawley, M. (2007). The R Book. John Wiley & Sons.  
 * LearnBayes package pdf in R  
 * proportion package pdf in R  
+* Robinson, David (200?) Introduction to Empirical Bayes  
 * Sullivan, G. M. (2011). Getting Off the “Gold Standard”: Randomized Controlled Trials and Education Research. Journal of Graduate Medical Education, 3(3), 285–289. http://doi.org/10.4300/JGME-D-11-00147.1  
 * Walser, Tamara M. (2014). Quasi-Experiments in Schools: The Case for Historical Cohort Control Groups.
 Practical Assessment, Research & Evaluation, 19(6). Available online:
