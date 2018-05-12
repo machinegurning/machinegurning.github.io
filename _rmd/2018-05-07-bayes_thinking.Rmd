@@ -31,7 +31,7 @@ Imagine you are responsible for the training budget of an organisation, let's sa
 
 In some ways this could be considered analgous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip to a casino and divvying out the money to your group. They disperse and spend the money how they see fit. They find a one-armed-bandit slot machine and put in a coin, they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win - the students show some improvement in a measurable thing) or they do not (a loss - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been succesful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
 
-There are plenty of great analytics being conducted by schools and charities tring to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). The academic research community are also actively involved providing excellent resources on how to measure difficult to measure characteristics of human behaviour (e.g. [SPECTRUM measures](https://educationendowmentfoundation.org.uk/projects-and-evaluation/evaluating-projects/measuring-essential-skills)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)).   
+There are plenty of great analytics being conducted by schools and charities tring to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). The academic research community are also actively involved providing excellent resources on how to measure difficult to measure characteristics of human behaviour (e.g. [SPECTRUM measures](https://educationendowmentfoundation.org.uk/projects-and-evaluation/evaluating-projects/measuring-essential-skills)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)). We opted for this problem domain to make it more relevant and everyday than the classic "Click Through Rate" problem for web pages, but the same principles apply ( [David Robinson](http://varianceexplained.org/) used baseball in his series of blog posts and book on this topic).     
 
 ## Randomised Control Trials (RCT) as a Gold Standard 
 
@@ -510,7 +510,7 @@ binomialBandit$setResults(list('A' = c(1, 0, 1, 0, 0, 1), 'B' = rbinom(n = 30, s
 
 The documentation tells us `banditize` is an 'object-oriented' implementation of multi-armed bandits in `bayesAB`. It is useful in conjunction with a Shiny app or Plumber deployment. The object itself is mutable and can adapt/learn from new data without having to re-assign the variable.  
 
-We can see how many times it's been updated by using one of the 5 methods it comes with. This would allow us to keep track.  
+We can see how many times it's been updated by using one of the five methods it comes with. This would allow us to keep track.  
 
 ```{r}
 binomialBandit$getUpdates()
@@ -519,7 +519,7 @@ binomialBandit$getUpdates()
 We can `serveRecipe()` to show the best intervention based on samples from both updated posteriors.  
 
 ```{r}
-# desert-island is better than kale-and-yoga, A is better than B
+# desert-island is better than kale-and-yoga, B is better than A
 binomialBandit$serveRecipe()
 ```
 
@@ -530,21 +530,65 @@ m2 <- binomialBandit$getBayesTest()
 summary(m2)
 ```
 
-This demonstrates the ease at which you can continuously update your understanding of the world without falling foul of problems associated with the Frequentist approach, such as repeated testing. It also is much easier to explain the findings to non-statisticians. Would you rather say “the probability that A is greater than B is 10%”, or “Assuming the null hypothesis that A and B are equal is true, the probability that we would see a result this extreme in A vs B is equal to 3%”? Furthermore, since we get a probability distribution over the parameters of the distributions of A and B, we can say something such as “There is a 74.2% chance that A’s λ is between 3.7 and 5.9.” directly from the methods themselves (paraphrased from the `bayesAB` vignette).  
+This demonstrates the ease at which you can continuously update your understanding of the world without falling foul of problems associated with the Frequentist approach, such as repeated testing. It also is much easier to explain the findings to non-statisticians. Would you rather say “the probability that A is greater than B is 10%”, or “Assuming the null hypothesis that A and B are equal is true, the probability that we would see a result this extreme in A vs B is equal to 3%”? Furthermore, since we get a probability distribution over the parameters of the distributions of A and B, we can say something such as “There is a 74.2% chance that A’s λ is between 0.4 and 0.55.” directly from the methods themselves (paraphrased from the `bayesAB` vignette).  
 
-### Building a Bayesian model for a MAT
+### Building a model for the priors
 
-Can we use the Bayesian approach which has some advantages above to model all interventions an organisation might encounter. For example, a school MAT might have up to fifty charities offering interventions who they have paid for before. If data were collected on the effect of those interventions on the students could we build a model to capture this and help the organisation make evidence-based decisions (combined with cost-benefit analysis) for the school budget and its students' future This is non-trivial and I've probably only scratched the surface.  
+Can we use the Bayesian approach which has some advantages above to model all interventions an organisation might encounter. For example, a school MAT might have up to fifty charities offering interventions who they have paid for before. If data were collected on the effect of those interventions on the students, could we build a model to capture this and help the organisation make evidence-based decisions (combined with cost-benefit analysis) for the school budget and its students' future. A MAT may also have the scale and purchasing power to insist upon those offering intervention-provision; data-collection, assessment before and after, use of a comparison group and use of standard intervention procedure guidance for implementers.  This is non-trivial and I've probably only scratched the surface.  
 
-We probably want a unique model for each organisation or MAT to deploy that has a unique prior for each intervention type (so that we control for the relationship between the number of students exposed to an intervention and the intervention's true impact average). A beta-binomial regression could be used to control for this and could also incorporate information (specifically the number of students a charity intervention had "treated") into a per-intervention prior distribution. This method could be extended: in particular, the model could include other factors that might change our prior expectations of an intervention. These are each particular applications of Bayesian hierarchical modeling, where the priors for each intervention are not fixed, but rather depend on other latent variables. In an empirical Bayesian approach to hierarchical modeling, one could estimate the prior using beta binomial regression, and then apply it to each intervention (Chapter 8, Robinson).   
+We probably want a unique model for each organisation or MAT to deploy, that has a unique prior for each intervention type (so that we control for the relationship between the number of students exposed to an intervention and the intervention's true impact average). A beta-binomial regression could be used to control for this and could also incorporate information (specifically the number of students a charity intervention had "treated") into a per-intervention prior distribution. This method could be extended: in particular, the model could include other factors that might change our prior expectations of an intervention. These are each particular applications of Bayesian hierarchical modeling, where the priors for each intervention are not fixed, but rather depend on other latent variables. In an empirical Bayesian approach to hierarchical modeling, one could estimate the prior using beta binomial regression, and then apply it to each intervention (Chapter 8, Robinson).   
 
 For example based on meta-analysis and literature review provided by other organisations, like the [Education Endowment Fund (EEF)](https://educationendowmentfoundation.org.uk/school-themes/character/), we could adjust an intervention's priors based on such evidence bases. Part of the philosophy of the Bayesian approach is to bring our prior expectations in mathematically. Let’s try doing that with some factors that influence intervention success on student character development through intervention.  
 
+For example, an intervention that is based on [Metacognition and self-regulation](https://educationendowmentfoundation.org.uk/evidence-summaries/teaching-learning-toolkit/meta-cognition-and-self-regulation/) might have a more optimistic prior than an [Aspiration based intervention](https://educationendowmentfoundation.org.uk/evidence-summaries/teaching-learning-toolkit/aspiration-interventions/). We could capture this in a beta-binomial regression model (in the Generalised Additive Model family for location, site and scale (GAMLSS)), the structure of which looks very similar to the `glm` earlier in this blog post (GAMLSS are univariate distributional regression models, where all the parameters of the assumed distribution for the response can be modelled as additive functions of the explanatory variables). Thus if we had these characteristics of the interventions being offered by charities we might be able to build up a model that better captures our prior distributions.      
+
+Broadly, this approach can be summarised by this quandary:
+
+Suppose you were a head-teacher inspecting potential training-interventions, and were choosing between two that have "treated" 100 students each:  
+* A metacognition-based intervention that has had 30 successes / 100 trials   
+* An aspiration-based intervention that has had 30 successes / 100 trials   
+
+Which would you guess was the better intervention? This seems like a silly question: they both have the same exact success record. But what if I told you that historically, metacognition-based interventions are slightly better aspiration-based interventions? How could you incorporate that evidence?  
+
+We simulate some data of interventions that look promising. They are new on the scene, how do we decide what their prior should be?  
+
 ```{r}
+set.seed(67)
+
+# generate some data
+# 100L, the L makes it an integer, no real reason
+
+interventions <- bind_rows(tidyr::crossing(intervention_id = letters[1:13],
+                                 flavour = c("metacognition"),
+                                 successes = rbinom(n = 13, 50, prob = 0.8),
+                                 trials = 100L),
+                           tidyr::crossing(intervention_id = letters[13:26],
+                                 flavour = c("aspiration"),
+                                 successes = rbinom(n = 13, 50, prob = 0.5),
+                                 trials = 100L)
+                           ) %>%
+  mutate(flavour = as.factor(flavour))
+
+glimpse(interventions)
+```
+
+```{r, message=FALSE}
+
+# this package can help, has some decent tutorials and demos, is also used in David Robinson's book
+library(gamlss)
+
+# like a glm earlier we cbind successes and failures
+# we also control for those Charities' interventions that have been used less, 
+# Maybe their success average is lower just because of higher variance associated with lower trials
+# in this data all our trials are the same but we include it here just 'cos
+fit1 <- gamlss(cbind(successes, trials - successes) ~ log(trials) + flavour, data = interventions,
+               family = BB(mu.link = "identity"))
 
 ```
 
 
+
+This fits a model that allows the mean successfully improving grit-score average µ to depend on the number of students that had been "treated" by an intervention as well as controlling for the "flavour" (is it metacognition and self-regulation-based or aspiration-based) of the intervention. This would help an organisation or group of data-sharing organisations to determine if there is a statistically significant advantage to prioritising the use of different flavours of interventions.  
 
 ## References
 
@@ -552,7 +596,7 @@ For example based on meta-analysis and literature review provided by other organ
 * Crawley, M. (2007). The R Book. John Wiley & Sons.  
 * LearnBayes package pdf in R  
 * proportion package pdf in R  
-* Robinson, David (200?) Introduction to Empirical Bayes  
+* Robinson, David (200?) Introduction to Empirical Bayes and [blog](http://varianceexplained.org/)  
 * Sullivan, G. M. (2011). Getting Off the “Gold Standard”: Randomized Controlled Trials and Education Research. Journal of Graduate Medical Education, 3(3), 285–289. http://doi.org/10.4300/JGME-D-11-00147.1  
 * Walser, Tamara M. (2014). Quasi-Experiments in Schools: The Case for Historical Cohort Control Groups.
 Practical Assessment, Research & Evaluation, 19(6). Available online:
