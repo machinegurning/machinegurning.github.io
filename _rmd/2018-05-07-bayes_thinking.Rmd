@@ -586,21 +586,45 @@ fit1 <- gamlss(cbind(successes, trials - successes) ~ log(trials) + flavour, dat
 
 ```
 
-
-
 This fits a model that allows the mean successfully improving grit-score average µ to depend on the number of students that had been "treated" by an intervention as well as controlling for the "flavour" (is it metacognition and self-regulation-based or aspiration-based) of the intervention. This would help an organisation or group of data-sharing organisations to determine if there is a statistically significant advantage to prioritising the use of different flavours of interventions.  
+
+We can then look at the coefficients using the `tidy()` function from broom.  
+
+```{r}
+broom::tidy(fit1)
+```
+
+According to our beta-binomial regression, there is indeed a statistically significant advantage to being a "metacognition" flavoured intervention, with these intervention types getting a succesful improvement in grit-score about 16% more often. It has standard interpretation rules for R summary tables of a model. To get the mean probability of success for "metacognition" flavoured interventions we add the mu intercept ecoefficient of 0.23 to 0.16, to get 0.39, the mean.  
+
+```{r}
+sum(filter(interventions, flavour == "metacognition")$successes) / sum(filter(interventions, flavour == "metacognition")$trials)
+```
+
+If we were to use [empirical Bayes estimation](https://www.r-bloggers.com/introducing-the-ebbr-package-for-empirical-bayes-estimation-using-baseball-statistics/), it would mean that every combination of flavour and number of trials would have its own prior. The prior can still be overcome with enough evidence. Other things to consider might be time; when the experiments were conducted. Controlling for time by including it in the model could identify novelty effects, for example, after controlling for time since an intervention was deployed, it might turn out its not very effective. This could be due to the novelty wearing off and a more general observation that students change through time and may be habituated to some appraoches.  
+
+## When to try something new  
+
+Thus far we've thought about quantifying impact and updating knowledge with new evidence, and how one might model it. Now we consider how one might determine what interventions to try out, as after all, typically you might just recommend picking the one with the highest mean success rate. However, this leaves you closed off to any new innovation. This is the classic [explore / exploit dilemma](http://www.princeton.edu/~rcw2/papers/WilsonEtAl_RLDM2013_horizon.pdf): the tradeoff between pursuing a known reward and sampling unknown, potentially better opportunities (Wilson et al., 2013). This dilemma is famously embodied by the N-armed bandit problem, where a gambler must decide whether to keep playing at a slot machine, or to try playing at a new one.  
+
+In our scenario, not all bandits have the same entry fee and same payout chance. There is also some autonomy demanded by schools, where teachers and students may have a preference for certain interventions for various extraneous reasons. With this caveat, there are [several standard approaches](https://www.datasciencecentral.com/profiles/blogs/some-reinforcement-learning-the-greedy-and-explore-exploit) to this dilemma: 
+
+* The Naive Round-Robin algorithm basically chooses every action once to complete a round and repeats the rounds. Obviously it’s far from optimal since it explores too much and exploits little.  
+* Pick the bandit with the highest upper 95% credible interval. This probably explores too much, and may suffer when you have many bandits and few coins to play.  
+* The greedy algorithm tries to choose the arm that has maximum average reward, with the drawback that it may lock-on to a sub-optimal action forever.  
+* The epsilon greedy and optimistic greedy algorithms are variants of the greedy algorithm that try to recover from the drawback of the greedy algorithm. Epsilon-greedy chooses an action uniformly at random with probability epsilon, whereas the optimistic greedy algorithm initialized the estimated reward for each action to a high value, in order to prevent locking to a sub-optimal action.  
 
 ## References
 
 * [Hardert et al. (1999). Best Evidence Medical Education](https://www.ncbi.nlm.nih.gov/pubmed/21281174) 
 * Crawley, M. (2007). The R Book. John Wiley & Sons.  
-* LearnBayes package pdf in R  
+* LearnBayes package pdf in R, http://fportman.com/blog/bayesab-a-new-r-package-for-bayesian-ab-testing/  
 * proportion package pdf in R  
 * Robinson, David (200?) Introduction to Empirical Bayes and [blog](http://varianceexplained.org/)  
 * Sullivan, G. M. (2011). Getting Off the “Gold Standard”: Randomized Controlled Trials and Education Research. Journal of Graduate Medical Education, 3(3), 285–289. http://doi.org/10.4300/JGME-D-11-00147.1  
 * Walser, Tamara M. (2014). Quasi-Experiments in Schools: The Case for Historical Cohort Control Groups.
 Practical Assessment, Research & Evaluation, 19(6). Available online:
 http://pareonline.net/getvn.asp?v=19&n=6  
+* Wilson, R. C., Geana, A., White, J. M., Ludvig, E. A. & Cohen, J. D. (2013). Exploration strategies in human decision making. Reinforcement Learning & Decision Making  
 
 ```{r}
 devtools::session_info()
