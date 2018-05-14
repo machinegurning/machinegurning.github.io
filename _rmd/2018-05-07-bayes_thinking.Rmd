@@ -1,16 +1,22 @@
 ---
-title: "Some interventions just do nothing"
+title: "Evaluating impact of interventions"
 author: matt_gregory
 comments: yes
 date: '2018-05-07'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
-excerpt: "Some interventions just do nothing"
+excerpt: "Protect yourself from costly bandits"
 published: FALSE
 status: process
 tags:
  - Bayes
  - Bayesian
+ - hypothesis
+ - inference
+ - a b
+ - a b testing
+ - Bayesian
+ - Frequentist
 categories: Rstats
 output: html_document
 ---
@@ -27,15 +33,15 @@ knitr::opts_chunk$set(
   )
 ```
 
-Imagine you are responsible for the training budget of an organisation, let's say a multi academy trust (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across organisations, the public-and-private sector, and charities, resulting in ineffective spending. This blog post explores the problem of quantifying impact, updating knowledge with new evidence and deciding when to try something new. We take inspiration from various sources, including the [medical literature](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3179209/).    
+Imagine you are responsible for the training budget of an organisation, let's say a [multi academy trust](https://www.oneeducation.co.uk/services/academies/academy-conversion/multi-academy-trust-faqs/) (MAT). Schools or [academies](https://en.wikipedia.org/wiki/Academy_(English_school)) run a range of interventions to benefit pupils; from peer tutoring programmes to curriculum boosters to farm-visits. These often-external-charity-led interventions can have positive, negative or negligible effects at a non-trivial cost to the school. But schools often find it extremely challenging to meaningfully assess their impact. This evaluation deficit is common across organisations, the public-and-private sector, and charities, resulting in ineffective spending. This blog post explores the problem of quantifying impact, updating knowledge with new evidence and deciding when to try something new. We take inspiration from various sources, including the [medical literature](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3179209/).    
 
-In some ways this could be considered analgous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip to a casino and divvying out the money to your group. They disperse and spend the money how they see fit. They find a one-armed-bandit slot machine and put in a coin, they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win - the students show some improvement in a measurable thing) or they do not (a loss - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been succesful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
+In some ways this could be considered analogous to the classic multi-armed bandit problem which we introduced in a [previous Bayesian themed post](https://www.machinegurning.com/rstats/bayes_r/). It's like organising a trip with friends to a casino and divvying out the money to your group. They disperse and spend the money how they see fit (without the benefit of a global view which together you could construct). They find a one-armed-bandit slot machine and put in a coin (or many coins), they either win or lose. In our scenario, the school's students either get a good return on the intervention (a win or success - the students show some improvement in a measurable thing) or they do not (a loss or failure - the money is wasted as the students show some decline or no change in a measurable thing). (Often this is easier said than done!) Based on their experience they might change machine (explore) or if they feel like it's a "good bandit", they might stick around and exploit it further. The critical requirement here is that the school knows when the intervention has been successful. Typically this would require some before and after testing. A control group will also be required as often students will improve at a thing through time regardless of any intervention  ( [also not easy!](https://educationendowmentfoundation.org.uk/projects-and-evaluation/projects/response-to-intervention/)); it's a [non-stationary problem](https://en.wikipedia.org/wiki/Stationary_process).   
 
-There are plenty of great analytics being conducted by schools and charities tring to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). The academic research community are also actively involved providing excellent resources on how to measure difficult to measure characteristics of human behaviour (e.g. [SPECTRUM measures](https://educationendowmentfoundation.org.uk/projects-and-evaluation/evaluating-projects/measuring-essential-skills)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)). We opted for this problem domain to make it more relevant and everyday than the classic "Click Through Rate" problem for web pages, but the same principles apply ( [David Robinson](http://varianceexplained.org/) used baseball in his series of blog posts and book on this topic).     
+There are plenty of great analytics being conducted by schools and charities trying to tackle these problems (see the [Education Endowment Fund](https://educationendowmentfoundation.org.uk/)). The academic research community are also actively involved providing excellent resources on how to measure difficult to measure characteristics of human behaviour (e.g. [SPECTRUM measures](https://educationendowmentfoundation.org.uk/projects-and-evaluation/evaluating-projects/measuring-essential-skills)). Education is an interesting and important domain, we are using this blog post to explore and enthuse data scientists ([sign up as a governor for a local school](https://www.gov.uk/become-school-college-governor)). We opted for this problem domain to make it more relevant and everyday than the classic "Click Through Rate" problem for web pages, but the same principles apply ( [David Robinson](http://varianceexplained.org/) used baseball in his comprehensive and more detailed series of blog posts and book on this topic).     
 
 ## Randomised Control Trials (RCT) as a Gold Standard 
 
-Often organisations that find themselves in a situation as described above, will becry the fact that they cannot possibly implement an RCT to ascertain causality. That might be the case, due to resource and ethical constraints, but that should not restrict our creativity and thoroughness of thought when considering non-randomised experimental design of the intervention, as there are other sources of bias than non-random allocation of subjects (however, whenever you can use double-blind RCT, do it!).  Looking for inspiration in the medical education field is a natural place to start, given their familiarity with using RCTs, what can we learn from them when this methodology is difficult to implement?  
+Often organisations that find themselves in a situation as described above, will be-cry the fact that they cannot possibly implement an RCT to ascertain causality. That might be the case, due to resource and ethical constraints, but that should not restrict our creativity and thoroughness of thought when considering non-randomised experimental design of the intervention, as there are other sources of bias than non-random allocation of subjects (however, whenever you can use double-blind RCT, do it!).  Looking for inspiration in the medical education field is a natural place to start, given their familiarity with using RCTs, what can we learn from them when this methodology is difficult to implement?  
 
 ## Barriers to RCT
 
@@ -43,11 +49,11 @@ Let us start by considering education implementation within any large organisati
 
 Paraphrased from Sullivan (2011) and adapted to the multi-school context:  
 
-With students moving through educational processes in real time, the difficulties of randomization become immediately clear. Students usually experience charity interventions at different times: those experiencing the intervention later may learn from intervening experiences and no longer be comparable to those experiencing the intervention at an earlier time. Also, students (and / or parents) have the option to refuse randomization and may have to contribute financially a small fee for their child to partciipate on an intervention. Use of a “placebo” is often contraindicated due to parents' sensitivities to schools acting as a place for experimentation. Charitable interventions that operate on multiple-sites, while providing more subjects (with greater power to detect differences) and more generalisability, present challenges due to differences in students. Also, the cost, coordination and data sharing of interventions across multiple sites can be high and public support for education trials may be weak to non-existent (Walser, 2014).  
+With students moving through educational processes in real time, the difficulties of randomization become immediately clear. Students usually experience charity interventions at different times: those experiencing the intervention later may learn from intervening experiences and no longer be comparable to those experiencing the intervention at an earlier time. Also, students (and / or parents) have the option to refuse randomization and may have to contribute financially a small fee for their child to participate on an intervention (biasing those students "treated" by the intervention). Use of a “placebo” is often contraindicated due to parents' sensitivities to schools acting as a place for "experimentation". Charitable interventions that operate on multiple-sites, while providing more subjects (with greater power to detect differences) and more generalisability, present challenges due to differences in students. Also, the cost, coordination and data sharing of interventions across multiple sites can be high and public support for education trials may be weak to non-existent (Walser, 2014).  
 
-In addition to feasibility considerations, experts question the applicability of research models, derived from clinical research, for education studies. The highly complex system of education may be a poor fit for the RCT model, which requires clear inclusion/exclusion criteria and interventions administered identically via multiple teachers / facilitators. In education studies, variables can rarely be controlled tightly and blinding of subjects and study personnel may be unethical or impossible or unsupported by the public. Finally, defining the therapeutic intervention in education research is much more difficult than in clinical trials. One cannot “apply curriculum daily” in the same way that one can prescribe a medication.
+In addition to feasibility considerations, experts question the applicability of research models, derived from clinical research, for education studies. The highly complex system of education may be a poor fit for the RCT model, which requires clear inclusion / exclusion criteria and interventions administered identically via multiple teachers / facilitators. In education studies, variables can rarely be controlled tightly and blinding of subjects and study personnel may be unethical or impossible or unsupported by the public. Finally, defining the therapeutic intervention in education research is much more difficult than in clinical trials. One cannot “apply curriculum daily” in the same way that one can prescribe a medication.
 
-: Definition 1
+: Table 1 Typical sources of error and potential work-arounds  
 | Source of Error | Solutions |  
 |------:|:-----|  
 | Different sites of intervention | Explicitly describe sources of variability and potential effects on outcomes |  
@@ -60,7 +66,7 @@ In addition to feasibility considerations, experts question the applicability of
 | Control group in same school; [contamination](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4365356/) | Nonconcurrent with intervention period |  
 | Difficult to ["blind"](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2947122/) | Students are aware they are being studied or know their treatment group; use objective assessment  |  
 
-Note how some solutions create new problems that puts you in a Catch-22. In this situation you want to design the experiment to be as least bad as possible; compromise is necessary throughout any scientific endeavour. The important point is to record what you did and why, so that those using your findings will be aware of these limitations.  
+Note how some solutions create new problems that puts you in a Catch-22. In this situation you want to design the experiment to be the least bad as possible; compromise is necessary throughout any scientific endeavour. The important point is to record what you did and why, so that those using your findings will be aware of these limitations.  
 
 ## Alternatives to Randomisation
 
@@ -70,15 +76,15 @@ After whetting your appetite on this topic we point you towards Cronbach (2011) 
 
 Our key message is, if you can't do a RCT don't turn off your brain! Thinking about your design carefully will reduce your [scientific debt](http://varianceexplained.org/r/scientific-debt/) and build your confidence in what is really happening.  
 
-This also highlights a short-coming in training and education more generally across many industries, particularly assessing impact of educational / training interventions in organisations and schools. These areas are probably ripe for [start-ups to tackle some complex esoteric problems well](https://www.youtube.com/watch?v=9bbS-trc8ys). We expore this theme further with some code, simulated data and statistics.  
+This also highlights a short-coming in training and education more generally across many industries, particularly assessing impact of educational / training interventions in organisations and schools. These areas are probably ripe for [start-ups to tackle some complex esoteric problems well](https://www.youtube.com/watch?v=9bbS-trc8ys). We explore this theme further with some code, simulated data and statistics.  
 
 ## Start simple
 
-Made-up charity "Kale-and-Yoga" (these are both hip, so appropriate to lampoon; this post does not use any real data) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an apporpriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
+Made-up charity "Kale-and-Yoga" (these are both hip, so appropriate to lampoon; this post does not use any real data) offers interventions to schools at a fee. Students are taken away from doing other things to attend this intervention. Their intervention sounds plausible as it targets teachers' putative predisposition to Kale and Yoga, how can we protect our schools from this kind of bias? If tested before and after using an appropriate test that captures what it is Kale-and-Yoga's intervention is trying to improve, we can build up an evidence base to estimate the intervention efficiency (the proportion of students who attend the intervention that improve). Let's pretend that the "Kale-and-Yoga" charity says that their intervention makes students more resilient, thus we might be inclined to assess students before and after using Duckworth et al.'s [grit-test](https://en.wikipedia.org/wiki/Grit_(personality_trait)#Scientific_findings_and_controversy).  
 
 Assuming history can be used to predict the future (ignoring the problem of induction) the expected value of the intervention efficiency of a random charity can be described. For the moment we ignore any effects of differences between the experimental conditions from which the intervention efficiencies were derived and assume that intervention efficiency of Kale-and-Yoga is described by a mean efficiency and a random error term.  
 
-The first intrevention at a school might look like this:
+The first intervention at a school might look like this:
 
 ```{r}
 # load some useful functions
@@ -101,27 +107,27 @@ df <- df %>%
 dplyr::glimpse(df)
 ```
 
-We can see the impact of chance on our random samples. This is why using statistics is important, otherwise we might consider the intervention to have been effective as it had shown an improvement in students performance. The scores after the intervention are higher. This does not necessarily mean the intervention was effective.  
+We can see the impact of chance on our random samples. This is why using statistics is important, otherwise we might consider the intervention to have been effective as it had shown an improvement in students' performance. The scores after the intervention are higher. This does not necessarily mean the intervention was effective.  
 
 ```{r}
 mean(df$before)
 mean(df$after)
 ```
 
-Intervention efficiency is a derived variable (`success`). It is assumed to be emergent from a series of independent and identically distributed random variables (X1, X2, X3... Xn; range: success (Student improved) =1, failure (No improvement) = 0), with constant probability of success p. Thus for the experiment we can consider who improved and who didn't or use our `before` and `after` scores. For this post we explore the success or failure, binary nature of data as this tends to be more commons for these types of interventions (are our students really i.i.d.?). Note how this contrasts to Poisson count data, where we know how many times an event occured, but not how many times it did not occur.   
+Intervention efficiency is a derived variable (`success`). It is assumed to be emergent from a series of independent and identically distributed random variables (X1, X2, X3... Xn; range: success (Student improved) =1, failure (No improvement) = 0), with constant probability of success p. Thus for the experiment we can consider who improved and who didn't or use our `before` and `after` scores. For this post we explore the success or failure, binary nature of data as this tends to be more common for these types of interventions (are our students really i.i.d.?). Note how this contrasts to Poisson count data, where we know how many times an event occurred, but not how many times it did not occur.   
 
 ```{r}
 table(df$success)
 ```
 
-We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless (Unfortunately this would rule out a great deal of research! We will instead continue on the basis that we must restrict our inference to the group of students 'at hand'). This is likely the case here, but for convenience we pretend that we sampled our school students at random (or limit our inference), the reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate. (Note: we also lost information by transforming our response variable, which could have been the difference in before and after score, rather than a less informative binary variable; we did that for the purposes of this tutorial).  
+We can test the null hypothesis that the underlying probability of success is p (here we use the default of p set to 0.5). However, as with estimating any standard error, the sample must be random to ensure independence of observations. If one is dealing with a convenience sample, then estimation of the standard error is meaningless. (Unfortunately this would rule out a great deal of research! We will instead continue on the basis that we must restrict our inference to the group of students 'at hand'). This is likely the case here, but for convenience we pretend that we sampled our school students at random (or limit our inference), the reality is it is often a convenience sample where a class of students is chosen and then assigned the intervention, or students are selected to participate. (Note: we also lost information by transforming our response variable, which could have been the difference in before and after score, rather than a less informative binary variable; we did that for the purposes of this tutorial, assuming binary data is the more typical response variable for intervention outcomes).  
 
 ```{r}
 # we need to pass a count of successes x and a count of trials n
 prop.test(x = sum(df$success), n = length(df$success), p = 0.5)
 ```
 
-Here we reject the null hypothesis (as the p-value < 0.05; note, distinct from p mentioned earlier, which was the probability of success in a series of Bernoulli trials), giving us the belief that the intervention has improved students' performance in the grit test. However, we know this to be wrong and a false positive, as we have generated the data ourselves from a known distribution.  This demonstrates the importance of continued testing of an intervention because our conclusions from the first experiment could be false positive or negative. Furthermore, an intervention might benefit from the [novelty effect](https://en.wikipedia.org/wiki/Novelty_effect) and students awareness that they are being tested. Gradually through time we should build up an evidence base. This would be greatly sped up if schools across a MAT or a region could share their data and experiences with specific interventions. However, the frequentist framework is not as conducive to this passing on of knowledge (although meta-analyses of the [Cochrane reviews](http://www.cochranelibrary.com/cochrane-database-of-systematic-reviews/index.html) and Education Endowment Fund show the gold standard approaches to this problem).  
+Here we reject the null hypothesis (as the p-value < 0.05; note, distinct from p mentioned earlier, which was the probability of success in a series of Bernoulli trials), giving us the belief that the intervention has improved students' performance in the grit test. However, we know this to be wrong and a false positive, as we have generated the data ourselves from a known distribution.  This demonstrates the importance of continued testing of an intervention because our conclusions from the first experiment could be a false positive or negative. Furthermore, an intervention might benefit from the [novelty effect](https://en.wikipedia.org/wiki/Novelty_effect) and students awareness that they are being tested. Gradually through time we should build up an evidence base. This would be greatly sped up if schools across a MAT or a region could share their data and experiences with specific interventions. However, the frequentist framework is not as conducive to this passing on of knowledge (although meta-analyses of the [Cochrane reviews](http://www.cochranelibrary.com/cochrane-database-of-systematic-reviews/index.html) and Education Endowment Fund show the gold standard approaches to this problem).  
 
 For a comprehensive list of methods, and the functions to carry them out in R, see the [proportion](https://www.sciencedirect.com/science/article/pii/S2352711017300018#f000005) package.  
 
@@ -195,11 +201,11 @@ post.sample <- rbeta(1000, beta.post.par[1], beta.post.par[2])
 quantile(post.sample, c(0.05, 0.95))
 ```
 
-Similar to the frequentist approach our credible interval does not contain p = 0.5. What you'll notice is that confidence intervals and credible intervals will tend to converge as n increases and the prior's importance is relatively reduced (by making up a low proportion of the total data).    
+Similar to the frequentist approach our credible interval does not contain p = 0.5. What you'll notice is that confidence intervals and credible intervals will tend to converge as n increases and the prior's importance is relatively reduced (by making up a lower proportion of the total data).    
 
 #### Collecting more data
 
-Impressed by this data (partly due to experimental design constraints), the school might commission another intervention with this charity. However, this shouldn't be the end of the story, the school and charity should continue to collect data for impact assessment. The charity could adjust its programme if it consistently does not impact the thing they want it to (or change their claim i.e. "Kale-and-Yoga" reduces the body mass index of students) and the school can ensure it is spending its money on effective evidence-based-interventions only.  
+Impressed by this data (partly due to experimental design constraints), the school might commission another intervention with this charity. However, this shouldn't be the end of the story, the school and charity should continue to collect data for impact assessment. The charity could adjust its programme (guided by A/B testing) if it consistently does not impact the thing they want it to (or change their claim i.e. "Kale-and-Yoga" reduces the body mass index of students) and the school can ensure it is spending its money on effective evidence-based-interventions only.  
 
 With the Bayesian approach it's easy to update our knowledge. Our new prior will be our previous posterior. The likelihood will be the data collected during our next experiment. From these two we will generate our new posterior. Imagine we repeated the experiment with more students by randomly sampling students across our school network, exposing them to the "Kale-and-Yoga" then assessing whether they got grittier or not.      
 
@@ -214,7 +220,8 @@ Thus we can accumulate knowledge and build on it in a more straightforward way c
 
 #### Building a business case by predicting a future sample
 
-To assess impact we need to be able to compare the cost of doing an intervention with the predicted gain in benefits. Often these might be somewhat intangible and it can be hard to assign economic value to a cost or benefit. Economists have lots of strategies to tackle this but even a back-of-the-envelope can be informative and should be part of the business case for how an organisation like a school decides on what interventions to pay for.  
+To assess impact we need to be able to compare the cost of doing an intervention with the predicted gain in benefits. Often these might be somewhat intangible and it can be hard to assign economic value to a cost or benefit. Economists have lots of strategies to tackle this but even a back-of-the-beer-mat can be informative and should be part of the business case for how an organisation like a school decides on what interventions to pay for.  
+
 Suppose we want to predict the number of students who improve their grit-score following the intervention. To do the programme costs £200 per student. We estimate that improving the grit-score of a student (if this can be shown to be a permanent change) will improve exam success and lifetime performance to the value of £300 (working not shown; made-up thought experiment). Thus if we run the intervention on 50 students from our school what's our expected cost-benefit ratio?  
 
 We know the cost, we know the number of students and we know the benefit. We can work out the minimum number of students that need to improve to work out our break even point. 
@@ -317,7 +324,7 @@ In the above example, we lumped together our successes and failures and then ana
 
 ## Comparing a few interventions across schools
 
-Now imagine you need to make this type of comparison of intervention efficacy across a range of charitable interventions (we pick an intervention that has some support on [EEF website](https://educationendowmentfoundation.org.uk/evidence-summaries/teaching-learning-toolkit/outdoor-adventure-learning/)) as well as our control group (do nothing; go about your lives) and across schools. You risk further false positives and false negatives due to [multiple testing](https://en.wikipedia.org/wiki/Multiple_comparisons_problem). This time we will hide the code for creating the data by setting the Rmarkdown chunk `echo` option to `FALSE`. Now you face the uncertainty of the real world.  
+Now imagine you need to make this type of comparison of intervention efficacy across a range of charitable interventions (we pick an intervention that has some support on [EEF website](https://educationendowmentfoundation.org.uk/evidence-summaries/teaching-learning-toolkit/outdoor-adventure-learning/)) as well as our control group (do nothing; go about your lives) and across schools. You risk further false positives and false negatives due to [multiple testing](https://en.wikipedia.org/wiki/Multiple_comparisons_problem). This time we will hide the code for creating the data by setting the Rmarkdown chunk `echo` option to `FALSE`. Now you face the uncertainty of the real world!  
 
 
 ```{r echo=FALSE}
@@ -395,7 +402,7 @@ First we must condense the data down, at the moment we represent it at the level
 # note, as our controls are assumed to be the same for both interventions, they are grouped together
 # this might not always be true
 df2 <- df %>% 
-  select(-student_id, -before, -after) %>%
+  dplyr::select(-student_id, -before, -after) %>%
   group_by(school, treatment)  %>% 
   summarise(n = n())
 
@@ -407,7 +414,7 @@ We want variables of success and failure, so that we can bind them together to c
 ```{r}
 # count successes and failures by summing logical
 df3 <- df %>%
-  select(-student_id, -before, -after) %>%
+  dplyr::select(-student_id, -before, -after) %>%
   group_by(school, treatment) %>%
   summarise(s = sum(success == 1), failures = sum(success == 0))
 
@@ -421,7 +428,7 @@ m1 <- glm(cbind(s, failures) ~ school + treatment, data = df3, family = "binomia
 summary(m1)
 ```
 
-Hold your horses prior to interpretation. First we check for overdispersion, residual deviance > residual df. If overdispersed set family to quasibinomial.   
+Hold your horses prior to interpretation! First we check for overdispersion, residual deviance > residual df. If overdispersed set family to quasibinomial.   
 
 ```{r}
 m2 <- glm(cbind(s, failures) ~ school + treatment, data = df3, family = "quasibinomial")
@@ -435,7 +442,7 @@ m3 <- update(m2, ~.-school)
 anova(m2, m3, test = "F")
 ```
 
-The `school` is not informative in our model and is not signficiant. There is no compelling evidence that the two different schools respond differently to the `treatment`.  
+The `school` is not informative in our model and is not signficant. There is no compelling evidence that the two different schools respond differently to the `treatment`.  
 
 ```{r}
 summary(m3)
@@ -450,7 +457,7 @@ anova(m3, m4, test = "F")
 
 Again, `treatment` has non significant effect. However, this doesn't mean there is not a difference between treatments. Thus, it's important for schools to revisit different interventions to be sure that they got a fair run, perhaps they were just unlucky the first few times. While its important to exploit good interventions, we must also consider how we continue to explore new and old interventions while carefully tracking performance against some agreed metric to ascertain effiacy.  
 
-Visit the machine gurning repo to find out what the data generation process looked like for the above (in `./rmd_/2018-05-07-bayes_thinking.Rmd`).  
+Visit the machine gurning repo to find out what the data generation process looked like for the above (in `./rmd_/2018-05-07-bayes_thinking.Rmd` of our Github repo).  
 
 In some situations we might not always have a control and might simply be comparing two competing charity interventions. In this instance we can treat the situation as an A/B test if the assumptions have been met. The Frequentist and Bayesian approaches to A/B testing is described in a Hacker-News-worthy earlier [blog post](https://www.machinegurning.com/rstats/bayes_r/). This is also the "pragmatic trial" that was described in our mini-literature review at the start of the blog post.  
 
@@ -460,22 +467,18 @@ In this way we could think of each intervention as being a one-armed-bandit in t
 
 *Thus, how can we design a systematic strategy that adapts to these stochastic rewards?*
 
-What strategy can we use to select the "best" bandit (student intervention) out of a group of bandits (student interventions). What is a unique bandit in this example? Is it every Charity Intervention? Or is it every charity-intervention-school combination? For simplicity we assume that each bandit has the same p regardless of the school it's in.  
+What strategy can we use to select the "best" bandit (student intervention) out of a group of bandits (student interventions). What is a unique bandit in this example? Is it every Charity Intervention? Or is it every charity-intervention-school combination? For simplicity we assume that each bandit has the same p regardless of the school it's in. We need to exploit good bandits but at the same time explore bandits that are poorly sampled, especially if bandits payout probability are non-stationary.  
 
-We need to exploit good bandits but at the same time explore bandits that are poorly sampled, especially if bandits payout probability are non-stationary.  
-
-We start off by using the `bayesAB` package which we used in a previous post focused on [A/B testing in R](https://www.machinegurning.com/rstats/bayes_r/). This helps us solve a two-armed bandit problem. Imagine we have two interventions to compare
-
-`bayesTest` is the main driver function of the `bayesAB` package. The input takes two vectors of data, corresponding to recipe A and recipe B of an A/B test (the data we have accumulated through this blog post for the two treatments; A - "kale-and-yoga", B - "desert-island").  
+We start off by using the `bayesAB` package which we used in a previous post focused on [A/B testing in R](https://www.machinegurning.com/rstats/bayes_r/). This helps us solve a two-armed bandit problem. Imagine we have two interventions to compare. `bayesTest` is the main driver function of the `bayesAB` package. The input takes two vectors of data, corresponding to recipe A and recipe B of an A/B test (the data we have accumulated through this blog post for the two treatments; A - "kale-and-yoga", B - "desert-island").  
 
 ```{r}
 kale_and_yoga_binary <- df %>%
   dplyr::filter(treatment == "kale-and-yoga") %>%
-  select(success)
+  dplyr::select(success)
   
 desert_island_binary <- df %>%
   dplyr::filter(treatment == "desert-island") %>%
-  select(success)
+  dplyr::select(success)
 ```
 
 We use all available data combined with our beta distribution priors (assuming data is gernerated by Bernoulli i.i.d) to fit a Bayesian model. For our priors we assume an uninformative, Jeffrey's (alpha and beta set to 1/2).    
@@ -508,7 +511,7 @@ binomialBandit <- banditize(m1, higher_is_better = TRUE)
 binomialBandit$setResults(list('A' = c(1, 0, 1, 0, 0, 1), 'B' = rbinom(n = 30, size = 1, prob = 0.75)))
 ```
 
-The documentation tells us `banditize` is an 'object-oriented' implementation of multi-armed bandits in `bayesAB`. It is useful in conjunction with a Shiny app or Plumber deployment. The object itself is mutable and can adapt/learn from new data without having to re-assign the variable.  
+The documentation tells us `banditize` is an 'object-oriented' implementation of multi-armed bandits in `bayesAB`. It is useful in conjunction with a Shiny app or Plumber deployment. The object itself is mutable and can adapt / learn from new data without having to re-assign the variable.  
 
 We can see how many times it's been updated by using one of the five methods it comes with. This would allow us to keep track.  
 
@@ -612,6 +615,35 @@ In our scenario, not all bandits have the same entry fee and same payout chance.
 * Pick the bandit with the highest upper 95% credible interval. This probably explores too much, and may suffer when you have many bandits and few coins to play.  
 * The greedy algorithm tries to choose the arm that has maximum average reward, with the drawback that it may lock-on to a sub-optimal action forever.  
 * The epsilon greedy and optimistic greedy algorithms are variants of the greedy algorithm that try to recover from the drawback of the greedy algorithm. Epsilon-greedy chooses an action uniformly at random with probability epsilon, whereas the optimistic greedy algorithm initialized the estimated reward for each action to a high value, in order to prevent locking to a sub-optimal action.  
+
+## Deploying the bandit as a JSON API
+
+Remember our bandit from earlier? We can turn the `bayesBandit` object called `m2` into an API and serve/update requests through HTTP. 
+
+```{r eval = FALSE}
+deployBandit(m2, port = 8000)
+```
+
+
+`deployBandit` turns a Bayesian bandit into a JSON API that accepts curl requests. Two of the five methods of `bayesBandit` classes are exposed: `serveRecipe` and `setResults`. Assuming the API is deployed on localhost this is an example of how it would be hit:
+
+```{r eval=FALSE}
+curl http://localhost:8000/serveRecipe
+
+curl --data '{"A":[1, 0, 1, 1], "B":[0, 0, 0, 1]}' http://localhost:8000/setResults
+```
+
+Thus, we could extend this to create a Shiny app.  
+
+## Conclusion
+
+Charities and training-providers are increasingly required to demonstrate that they are achieving impact, based on robust evaluation of their work. While it is important to ensure resources are being used effectively, undertaking evaluation often poses challenges for charities, which may well have limited resources or experience with which to do this.  
+
+Charities need to know about the impact of their activities so that they can ensure their efforts are having their intended effect. That's not to say that impact evaluation will necessarily be able to capture all of the valuable outcomes produced as a result of a charity's work - some outcomes may be extremely difficult or impossible to measure, and it doesn't mean those outcomes are not important. However, just because it may be difficult to measure the impact of something, it doesn't mean we shouldn't try!  
+
+Given the complexities described above and the esoteric language used, it strikes me that it would be helpful for larger organisations or programmes to help design and demonstrate best practice or for some tech start-ups to build some apps to facilitate this process. For example, in the school domain, MATs presumably have some purchasing power and could insist upon some standards for Charity intervention impact evaluation frameworks, an app could help ensure the consistency of any intervention delivery and assessment, the outcome of which could be served to the school leaders across the network. This would ensure quality experimental design which would output better data which could then be analysed and interpreted in a better way.  
+
+In this blog post we introduced some Frequentist and Bayesian approaches to answering some of the typical questions that an organisation's leader might face; how good is an intervention, which is better between these two and how can we learn from previous experience in the literature using informative priors and considerations for the explore/exploit dilemma.  
 
 ## References
 
