@@ -7,7 +7,7 @@ modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Protect yourself from costly bandits"
 published: FALSE
-status: process
+status: processed
 tags:
  - Bayes
  - Bayesian
@@ -575,7 +575,9 @@ interventions <- bind_rows(tidyr::crossing(intervention_id = letters[1:13],
 glimpse(interventions)
 ```
 
-```{r, message=FALSE}
+We don't run the code here as it was causing our rmarkdown to markdown function to fail for a reason we couldn't debug quickly. Thus instead we show the working for you to implement yourself and print the model output.  
+
+```{r eval=FALSE}
 
 # this package can help, has some decent tutorials and demos, is also used in David Robinson's book
 library(gamlss)
@@ -593,9 +595,23 @@ This fits a model that allows the mean successfully improving grit-score average
 
 We can then look at the coefficients using the `tidy()` function from broom.  
 
-```{r}
+```{r eval=FALSE}
+# you should try, pretty output
 broom::tidy(fit1)
 ```
+
+We print the output here for your convenience.  
+
+```{r}
+# this is what the model output looks like
+tibble::tibble(parameter = c("mu", "mu", "sigma"),
+               term = c("intercept", "flavourmetacognition", "intercept"),
+               estimate = c(0.24, 0.14, -35.96),
+               std_error = c(0.0040, 0.0068, 0.0033),
+               statistic = c(61.88, 21.47, -10879.74),
+               p_value = c(5e-139, 2e-55, 0))
+```
+
 
 According to our beta-binomial regression, there is indeed a statistically significant advantage to being a "metacognition" flavoured intervention, with these intervention types getting a succesful improvement in grit-score about 16% more often. It has standard interpretation rules for R summary tables of a model. To get the mean probability of success for "metacognition" flavoured interventions we add the mu intercept ecoefficient of 0.23 to 0.16, to get 0.39, the mean.  
 
