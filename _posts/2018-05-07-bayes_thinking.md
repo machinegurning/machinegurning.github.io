@@ -44,8 +44,9 @@ With students moving through educational processes in real time, the difficultie
 In addition to feasibility considerations, experts question the applicability of research models, derived from clinical research, for education studies. The highly complex system of education may be a poor fit for the RCT model, which requires clear inclusion / exclusion criteria and interventions administered identically via multiple teachers / facilitators. In education studies, variables can rarely be controlled tightly and blinding of subjects and study personnel may be unethical or impossible or unsupported by the public. Finally, defining the therapeutic intervention in education research is much more difficult than in clinical trials. One cannot “apply curriculum daily” in the same way that one can prescribe a medication.
  
 : Table 1 Typical sources of error and potential work-arounds  
+
 | Source of Error | Solutions |  
-|------:|:-----|  
+|------|-----|  
 | Different sites of intervention | Explicitly describe sources of variability and potential effects on outcomes |  
 | Students at different stages in education and physical development | Concurrent comparison / control group |  
 | Different implementers of intervention | Intervention standard operating procedure; enumerate and describe variations explicitly |  
