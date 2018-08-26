@@ -6,7 +6,7 @@ date: '2018-05-07'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
 excerpt: "Protect yourself from costly bandits"
-published: FALSE
+published: TRUE
 status: processed
 tags:
  - Bayes

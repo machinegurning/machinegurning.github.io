@@ -1,0 +1,109 @@
+---
+title: "The century of complexity"
+author: matt_gregory
+comments: yes
+date: '2018-08-26'
+modified: `r format(Sys.time(), '%Y-%m-%d')`
+layout: post
+excerpt: "How can network science help?"
+published: FALSE
+status: process
+tags:
+ - Networks
+ - Network
+ - Graph
+ - Algorithm
+categories: Rstats
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  dev = "svg",
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  cache = TRUE
+  )
+```
+
+The universe is hopelessly complicated. Within it are systems that make the mind boggle. Think of the number of interconnected neurons in your brain required to understand this sentence ( [connectome](http://www.humanconnectomeproject.org/)); and the [network of interactions](https://en.wikipedia.org/wiki/Gene_regulatory_network) between genes, proteins and metabolites required to make the [cellular network](https://www.humancellatlas.org/) that is prereqisite to life.  
+
+> “I think the next century will be the century of complexity.” - Stephen Hawking  
+
+All is not lost. These seemingly intractably complicated problems can and have been succesffully modelled. This is particulalry apparent in some of the most succesful companies that have leveraged network science for profit. This also emphasises the empirical and data driven nature of network science.   
+
+In addition to the conspicuous applied succeses of network science (e.g. see [Facebook's value](https://www.forbes.com/companies/facebook/)). A key discovery of network science is that the architecture of networks emerging in various domains of science, nature, and technology are similar to each other, a consequence of being governed by the same organizing principles. Consequently we can use a common set of mathematical tools to explore these systems.  
+
+We use R as it has a bunch of [awesome packages for network analysis](https://github.com/qinwf/awesome-R#network-analysis). We also consider how you might deploy a visualisation of your network online.  
+
+## A simpler time
+
+This is probably not your first run-in with network science. Did you ever draw a food web at school? That's network science. Let's use R to recreate and relive that joy of sketching a simple food web. We'll use this to understand the fundamentals of networks that will scaffold our understanding to visualising and analysing a more complicated real world business data set. This will allow you to spot the opportunity for using graphs and network science to solve a range of problems in your organisation.    
+
+## Graph fundamentals
+
+Soil science isn't widely regarded as being sexy but my [co-blogger](https://dspace.lib.cranfield.ac.uk/handle/1826/9298) might disagree with this assertion. To help promote this important discipline we use it is our basis for a food web and a model complex system (which we greatly simplify).    
+
+A food web is an extension of the concept of a food chain which allows for a more detailed description of how species depend on each other. A food web can be modelled via a graph in which the nodes (or vertices) represent the species and the edges (links or relationships) represent feeding connections; an edge from node A to node B indicates species B consumes species A (note how there is a direction to the edge; FROM one node TO another, thus we say it is a "directed" graph). We use the `igraph::graph_from_literal` function as it is useful if you want to create a small (named) graph quickly, it works for both directed and undirected graphs.  
+
+From `?` we read that we must supply one or more R expressions giving the structure of the graph. The expressions consist of vertex names and edge operators. An edge operator is a sequence of ‘-’ and ‘+’ characters, the former is for the edges and the latter is used for arrow heads. The edges can be arbitrarily long, i.e. you may use as many ‘-’ characters to “draw” them as you like (this [tutorial](http://kateto.net/ruworkshop#21_create_networks) provides greater depth and exploration of `igraph` network creation functions).
+
+```{r}
+library(igraph)
+
+# build the graph
+soil_web <- graph_from_literal(A -+ B)
+soil_web
+```
+
+The first line always starts with IGRAPH, showing you that the object is an `igraph graph`. For interpreting the rest of the output see the [relevant help](http://igraph.org/r/doc/print.igraph.html) of the `igraph` manual. What does the "D" mean?    
+
+We also have easy access to nodes, edges, and their attributes with:
+
+```{r}
+E(soil_web)       # The edges of the "soil_web" object
+
+V(soil_web)       # The vertices of the "soil_web" object
+
+```
+
+## Simple visualisation
+
+More generally, if we want to understand a complex system, we need to know how its components interact with each other in a more human-readable format. In other words we need a map of its wiring diagram.   
+
+```{r 2018-08-26-soil_web, fig.height=3, fig.width=3}
+# make visualisation reproducible
+set.seed(255)
+# visualise it
+plot(soil_web)
+```
+
+Or from our earlier post on [Markov Chains](https://www.machinegurning.com/rstats/markov_chain_discrete/) which uses graphs, we can prettify it with:  
+
+```{r 2018-08-26-soil_web_pretty}
+library(ggnet)
+
+```
+
+
+## Representing graphs
+
+
+
+## Conclusion
+
+ 
+
+## References
+
+* Barbasi, A. [Network Science book](http://networksciencebook.com/).  
+* Ognyanova, K. (2016) Network analysis with R and igraph: NetSci X Tutorial. Retrieved from www.kateto.net/networks-r-igraph  
+* [SysMIC course](https://sysmic.ac.uk/). Section 1.1.  
+
+
+```{r}
+devtools::session_info()
+```
