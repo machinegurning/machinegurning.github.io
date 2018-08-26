@@ -39,15 +39,22 @@ In addition to the conspicuous applied succeses of network science (e.g. see [Fa
 
 We use R as it has a bunch of [awesome packages for network analysis](https://github.com/qinwf/awesome-R#network-analysis). We also consider how you might deploy a visualisation of your network online.  
 
-## A simpler time
+The objectives of this post are to:  
 
-This is probably not your first run-in with network science. Did you ever draw a food web at school? That's network science. Let's use R to recreate and relive that joy of sketching a simple food web. We'll use this to understand the fundamentals of networks that will scaffold our understanding to visualising and analysing a more complicated real world business data set. This will allow you to spot the opportunity for using graphs and network science to solve a range of problems in your organisation.    
+* use a simple example to teach you the fundamental units and language of network science.  
+* provide links to other resources for more code examples.  
+* convert a real world business example into a graph data base using Docekr and Neo4j.  
+* provide some interactive visualisation options that scale.    
+
+## Your first network
+
+This is probably not your first run-in with network science. Did you ever draw a food web at school? Let's use R to recreate and relive that joy of sketching a simple food web. We'll use this to understand the fundamentals of networks that will scaffold our understanding to visualising and analysing a more complicated real world business data set. This will allow you to spot the opportunity for using graphs and network science to solve a range of problems in your organisation.    
 
 ## Graph fundamentals
 
 Soil science isn't widely regarded as being sexy but my [co-blogger](https://dspace.lib.cranfield.ac.uk/handle/1826/9298) might disagree with this assertion. To help promote this important discipline we use it is our basis for a food web and a model complex system (which we greatly simplify).    
 
-A food web is an extension of the concept of a food chain which allows for a more detailed description of how species depend on each other. A food web can be modelled via a graph in which the nodes (or vertices) represent the species and the edges (links or relationships) represent feeding connections; an edge from node A to node B indicates species B consumes species A (note how there is a direction to the edge; FROM one node TO another, thus we say it is a "directed" graph). We use the `igraph::graph_from_literal` function as it is useful if you want to create a small (named) graph quickly, it works for both directed and undirected graphs.  
+A food web is an extension of the concept of a food chain which allows for a more detailed description of how species depend on each other. A food web can be modelled via a graph in which the nodes (or vertices) represent the species and the edges (links or relationships) represent feeding connections; an edge from node A to node B indicates species B consumes species A. Note how there is a direction to the edge; FROM one node TO another, thus we say it is a "directed" graph. We use the `igraph::graph_from_literal` function as it is useful if you want to create a small (named) graph quickly, it works for both directed and undirected graphs.  
 
 From `?` we read that we must supply one or more R expressions giving the structure of the graph. The expressions consist of vertex names and edge operators. An edge operator is a sequence of ‘-’ and ‘+’ characters, the former is for the edges and the latter is used for arrow heads. The edges can be arbitrarily long, i.e. you may use as many ‘-’ characters to “draw” them as you like (this [tutorial](http://kateto.net/ruworkshop#21_create_networks) provides greater depth and exploration of `igraph` network creation functions).
 
@@ -61,7 +68,7 @@ soil_web
 
 The first line always starts with IGRAPH, showing you that the object is an `igraph graph`. For interpreting the rest of the output see the [relevant help](http://igraph.org/r/doc/print.igraph.html) of the `igraph` manual. What does the "D" mean?    
 
-We also have easy access to nodes, edges, and their attributes with:
+We also have easy access to nodes, edges with:
 
 ```{r}
 E(soil_web)       # The edges of the "soil_web" object
@@ -81,15 +88,92 @@ set.seed(255)
 plot(soil_web)
 ```
 
-Or from our earlier post on [Markov Chains](https://www.machinegurning.com/rstats/markov_chain_discrete/) which uses graphs, we can prettify it with:  
-
-```{r 2018-08-26-soil_web_pretty}
-library(ggnet)
-
-```
-
+There are [many approaches](http://kateto.net/ruworkshop#4_plotting_network_data) you can use to prettify and customise your visualisation within R. You can even create interactive plots for this. In this blog post we focus on alternative software that has the graph database Neo4J as its core, but first we think about how we represent this data. How do we go about capturing this data in the first place?    
 
 ## Representing graphs
+
+Representing data as a graph is very generaliseable and may be better suited to a problem than traditional relational databases, depending on the type of questions your users are interested in asking.  
+
+Let's increase the complexity of our soil food web by adding an extra species and including scavenging relationships as well as predation.  
+
+```{r 2018-08-26-soil_web2, fig.height=3, fig.width=3}
+# build the more complicated directed graph or digraph
+soil_web2 <- graph_from_literal(A -+ B, B -+ C,
+                                C -+ B, C -+ A)
+
+# visualise it
+# A eats B, B scavenges on C, C scavenges on B, C eats A
+plot(soil_web2)
+```
+
+We now consider how we might represent this data mathematically.  
+
+### Adjacency matrix
+
+A very common way to define graphs is via a two dimensional array known as an adjacency [matrix](http://networksciencebook.com/chapter/2#matrix). Continuing from the example above, how would we represent this graph as a matrix?  
+
+We'll break this down into simple steps, first we create an empty [square matrix](https://en.wikipedia.org/wiki/Square_matrix) correpsonding to the number of species in our food web (or nodes in our graph).  
+
+```{r}
+# create an empty matrix to hold our relationships
+m <- matrix(data = 0,
+            nrow = 3, ncol = 3,
+            dimnames = list(
+              # row names, i
+              c("A", "B", "C"),
+              # col names, j
+              c("A", "B", "C")
+              )
+            )
+
+m
+```
+
+Thus we have three species all unconnected. Let's add our connections from our "complicated" food web. As we have named our dimensions, we can use these to assign a value to the relationship, or we can use regular matrix indexing by supplying a 1d index for each dimension, separated by a comma.  
+
+```{r}
+# from A to B, or A eats B
+m["A", "B"] <- 1
+m
+```
+Species B scavenges on species C:
+
+```{r}
+# from B to C
+m[2, 3] <- 1
+m
+```
+
+And the last two relationships where C eats A and C scavenges B (here we mix methods as experimentation helps us learn, try it out yourself):  
+
+```{r}
+# from C to A and from C to B
+m[c("C", "C"), c(1, 2)] <- 1
+m
+```
+
+When reading these matrices remember that the rows tell you FROM and the columns TO. So FROM A to B should draw an arrow in your mind from node A to B, thus A eats B.  
+
+Note one weakness of this approach, our edges are not labelled. We fail to distinguish between whether the relationship is predation or scavenging. Thus we could improve things by using a graph database that stores these additional characteristics of the relationship.  
+
+### Useful statistics
+
+There's a bunch of useful characteristics of our graph that we can calculate using standard approaches described [here](http://networksciencebook.com/chapter/2#degree). These help us ask questions about the [connectedness of a graph](http://networksciencebook.com/chapter/2#connectedness), [distances between nodes](http://networksciencebook.com/chapter/2#paths) and the the degree to which the neighbors of a given node link to each other ( [clustering](http://networksciencebook.com/chapter/2#clustering)).  
+
+```{r}
+# the number of a nodes adjacent edges
+# how many links does it have?
+# this could help us identify keystone species
+degree(soil_web2)
+```
+
+Given the above toy example we'll use a real world data set later in this post to explore graph statistics and useful algorithms for solving problems.  
+
+## Spreadsheet friendly representation?
+
+Most organisations are stuck collecting and manipulating data in spreadsheets. Can we represent our network in one spreadsheet?  
+
+Those of you familiar with the `tidyverse` and the concept of the [tidy data set](http://vita.had.co.nz/papers/tidy-data.html) will . Tidy datasets are easy to manipulate, model and visualize, and have a specific structure: each variable is a column, each observation is a row, and each type of observational unit is a table.
 
 
 
@@ -102,6 +186,7 @@ library(ggnet)
 * Barbasi, A. [Network Science book](http://networksciencebook.com/).  
 * Ognyanova, K. (2016) Network analysis with R and igraph: NetSci X Tutorial. Retrieved from www.kateto.net/networks-r-igraph  
 * [SysMIC course](https://sysmic.ac.uk/). Section 1.1.  
+* A [bunch of useful references and papers](http://networksciencebook.com/chapter/2#bibliography2).  
 
 
 ```{r}
