@@ -154,7 +154,11 @@ m
 
 When reading these matrices remember that the rows tell you FROM and the columns TO. So FROM A to B should draw an arrow in your mind from node A to B, thus A eats B.  
 
+This format is machine readable but not particularly human readable. For most graphs it will also be a spare matrix, with mostly zeroes, as most nodes will be unconnected. We introduce the adjacency matrix here as it's quite straight forward and many network packages in R use the adjacency matrix to create specific classes for the appropriate packages (see this [blog by Jesse Saddler](https://www.jessesadler.com/post/network-analysis-with-r/) for some examples).
+
 Note one weakness of this approach, our edges are not labelled. We fail to distinguish between whether the relationship is predation or scavenging. Thus we could improve things by using a graph database that stores these additional characteristics of the relationship.  
+
+Another problem is that human's who capture this data in the first instance (typically in a spreadsheet) are unlikely to have the data in this format. We discuss different representational formats later.  
 
 ### Useful statistics
 
@@ -175,8 +179,58 @@ Most organisations are stuck collecting and manipulating data in spreadsheets. C
 
 Those of you familiar with the `tidyverse` and the concept of the [tidy data set](http://vita.had.co.nz/papers/tidy-data.html) will . Tidy datasets are easy to manipulate, model and visualize, and have a specific structure: each variable is a column, each observation is a row, and each type of observational unit is a table.
 
+We could just use one spreadsheet to capture the above information that is also arguably a bit easier for a human to interpret (and enter data for). All we need is information of which edge goes where (importantly each node must have a unique identifier). We call this information an edge list, where we need to know what node an edge goes FROM and TO. We'll draw an edge list for our example above.  
+
+```{r}
+library(tidyverse)
+# Where Species A is id 1, Species B id 2, Species C id 3
+edge_list <- tibble(from = c(1, 2, 3, 3), to = c(2, 3, 1, 2))
+
+edge_list
+
+```
+
+A quick sense check; does this have the same number of edges as our adjacency matrix?  
+
+```{r}
+if (nrow(edge_list) == sum(m)) {
+  print("The number of edges in the edge list equals the sum of ones in the adjacency matrix!")
+}
+```
 
 
+Is this sufficient? What might we be missing? Earlier we mentioned how our relationships or edges were directed. We get this information by the FROM and TO but we can enhance it by providing a description of the type of relationship.  
+
+```{r}
+# Where Species A is id 1, Species B id 2, Species C id 3
+edge_list <- edge_list %>%
+  # describe the type of interaction
+  # we use CAPS as it's the convention for Neo4j, a popular graph database
+  mutate(description = c("PREDATES", "SCAVENGES", "SCAVENGES", "PREDATES"))
+
+edge_list
+```
+
+If we included a seperate node list we could have an attributes column that helps us describe the characteristics of each species, that could be useful or provide further insight for our interpretation. For example, every product is now being classified as gluten free, thus we might like to add this extra information into our food web so that our discerning species can decide on an appropriate food source.  
+
+This can be very handy for spotting patterns and later analysis, so ensure you use an informative description that will meet your analytical needs later.  
+
+```{r}
+# provide unique ids for each node
+node_list <- tibble(id = 1:3, description = c("gluten", "gluten free", "gluten"))
+# or as matching letters
+# LETTERS[1:3]
+node_list
+```
+
+Alongside our unique id for each node and edge we could also include a human readable id, or instead use a unique character string or name as the id.  
+
+For a guide on how to convert a typical dataset into an edge and node list see [Jesse Saddler's blog](https://www.jessesadler.com/post/network-analysis-with-r/).  
+## A real example - Government Innovation and Emerging Technology useage
+
+Two tidy data frames can hold our data, but why is this format useful?
+
+The UK Government recently published
 ## Conclusion
 
  
@@ -184,6 +238,7 @@ Those of you familiar with the `tidyverse` and the concept of the [tidy data set
 ## References
 
 * Barbasi, A. [Network Science book](http://networksciencebook.com/).  
+* Saddler, J. [Network analysis with R](https://www.jessesadler.com/post/network-analysis-with-r/).  
 * Ognyanova, K. (2016) Network analysis with R and igraph: NetSci X Tutorial. Retrieved from www.kateto.net/networks-r-igraph  
 * [SysMIC course](https://sysmic.ac.uk/). Section 1.1.  
 * A [bunch of useful references and papers](http://networksciencebook.com/chapter/2#bibliography2).  
