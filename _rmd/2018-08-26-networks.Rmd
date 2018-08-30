@@ -154,11 +154,13 @@ m
 
 When reading these matrices remember that the rows tell you FROM and the columns TO. So FROM A to B should draw an arrow in your mind from node A to B, thus A eats B.  
 
-This format is machine readable but not particularly human readable. For most graphs it will also be a spare matrix, with mostly zeroes, as most nodes will be unconnected. We introduce the adjacency matrix here as it's quite straight forward and many network packages in R use the adjacency matrix to create specific classes for the appropriate packages (see this [blog by Jesse Saddler](https://www.jessesadler.com/post/network-analysis-with-r/) for some examples).
+This format is machine readable but not particularly human readable. For most graphs it will also be a spare matrix, with mostly zeroes, as most nodes will be unconnected. Sparseness has important consequences on the way we explore and store real networks. For example, when we store a large network in our computer, it is better to store only the list of links to avoid blocking out too much memory.  
 
-Note one weakness of this approach, our edges are not labelled. We fail to distinguish between whether the relationship is predation or scavenging. Thus we could improve things by using a graph database that stores these additional characteristics of the relationship.  
+We introduce the adjacency matrix here as it's quite straight forward and many network packages in R use the adjacency matrix to create specific classes for the appropriate packages (see this [blog by Jesse Saddler](https://www.jessesadler.com/post/network-analysis-with-r/) for some examples).
 
-Another problem is that human's who capture this data in the first instance (typically in a spreadsheet) are unlikely to have the data in this format. We discuss different representational formats later.  
+As well as memory issues, we note another weakness of this approach, our edges are not labelled. We fail to distinguish between whether the relationship is predation or scavenging. Thus we could improve things by using a graph database that stores these additional characteristics of the relationship.  
+
+Another problem is that humans who capture this data in the first instance (typically in a spreadsheet) are unlikely to have the data in this format. We discuss different representational formats later.  
 
 ### Useful statistics
 
@@ -184,6 +186,7 @@ We could just use one spreadsheet to capture the above information that is also 
 ```{r}
 library(tidyverse)
 # Where Species A is id 1, Species B id 2, Species C id 3
+# We could have a dictionary to translate the id to species name
 edge_list <- tibble(from = c(1, 2, 3, 3), to = c(2, 3, 1, 2))
 
 edge_list
@@ -198,6 +201,7 @@ if (nrow(edge_list) == sum(m)) {
 }
 ```
 
+### Edge attributes
 
 Is this sufficient? What might we be missing? Earlier we mentioned how our relationships or edges were directed. We get this information by the FROM and TO but we can enhance it by providing a description of the type of relationship.  
 
@@ -211,26 +215,100 @@ edge_list <- edge_list %>%
 edge_list
 ```
 
-If we included a seperate node list we could have an attributes column that helps us describe the characteristics of each species, that could be useful or provide further insight for our interpretation. For example, every product is now being classified as gluten free, thus we might like to add this extra information into our food web so that our discerning species can decide on an appropriate food source.  
+### Edge weights
+
+We can also add a weight to the edge which could be informative. In this example we can pretend that we have captured quantitative data for the relative biomass provided by each food source. For example, if Species A gets all its food from Species B and Species C gets most of its food from eating Species B but some of it from scavenging on Species A. We can incorporate this information that could be used later, perhaps to adjust the thickness of our edges between nodes (showing the strength of dependence of one species on another).  
+
+```{r}
+edge_list <- edge_list %>%
+  mutate(prop_of_diet = c(1, 1, 0.2, 0.8))
+
+edge_list
+```
+
+### Node attributes
+
+If we included a seperate node list we could have an attributes column that helps us describe the characteristics of each species, that could be useful or provide further insight for our interpretation. For example, most products are now being classified as gluten-free or not, thus we might like to add this extra information into our food web so that our discerning species can decide on an appropriate food source to meet their dietary needs.  
 
 This can be very handy for spotting patterns and later analysis, so ensure you use an informative description that will meet your analytical needs later.  
 
 ```{r}
 # provide unique ids for each node
-node_list <- tibble(id = 1:3, description = c("gluten", "gluten free", "gluten"))
-# or as matching letters
-# LETTERS[1:3]
+# add some additional columns / description of our nodes
+# this could be many atrributes that we could filter on later
+node_list <- tibble(id = 1:3, description = c("gluten", "gluten-free", "gluten"))
+
 node_list
 ```
 
 Alongside our unique id for each node and edge we could also include a human readable id, or instead use a unique character string or name as the id.  
 
 For a guide on how to convert a typical dataset into an edge and node list see [Jesse Saddler's blog](https://www.jessesadler.com/post/network-analysis-with-r/).  
+
+### Translating from unique id to name
+
+Above we used a unique id for each species but we might want to readily convert back to our human readable name using a dictionary or by storing the name in our edge list. Accessing the dictionary using hashes (i.e. using a specialised package) can outperform native named lists and vectors but if performance is an issue you should probably be storing your graph database in a dedicated graphDB like [Neo4j](https://neo4j.com/).  
+
+For our example above we can make use of the `LETTERS` object.  
+
+```{r}
+# in Neo4j CamelCase is preferred for nodes
+node_list <- node_list %>%
+  mutate(
+    species_name = paste("Species", LETTERS[id])
+         )
+# we can use species_name if we want to visualise
+node_list
+# same could be used for edge_list
+```
+
+## Tidygraph
+
+Both node and edge data by itself fits very well within the tidy concept as each node and edge is, in a sense, a single observation. Thus, a close approximation of tidyness for relational data is two tidy data frames, one describing the node data and one describing the edge data. [tidygraph](https://www.data-imaginist.com/2017/introducing-tidygraph/) sits on top of the well-oiled machinery provided by the aforementioned `igraph`. `tidygraph` subclasses `igraph` with the `tbl_graph` class and simply exposes it in a tidy manner.  
+
+```{r}
+library(tidygraph)
+
+# our food web is a directed graph
+food_web <- tbl_graph(nodes = node_list, edges = edge_list, 
+          directed = TRUE)
+
+# tbl_graph inherits from igraph
+class(food_web)
+
+# we store the data as two tidy dataframes
+food_web
+```
+
+In this format we can now plot using the `ggplot2`-like package `ggraph` (pronounced g-giraffe or g-g-raff). See the [manual](https://cran.r-project.org/web/packages/ggraph/ggraph.pdf) for details or this [blog post](https://www.jessesadler.com/post/network-analysis-with-r/).  
+
+```{r}
+library(ggraph)
+
+ggraph(food_web, layout = "linear") + 
+  geom_edge_arc(aes(width = prop_of_diet,
+                    arrow = TRUE), alpha = 0.8) + 
+  scale_edge_width(range = c(0.2, 2)) +
+  geom_node_text(aes(label = species_name),
+                 size = 2, color = "red") +
+  labs(edge_width = "Proportion of diet") +
+  theme_graph()
+
+```
+
+
+
 ## A real example - Government Innovation and Emerging Technology useage
 
 Two tidy data frames can hold our data, but why is this format useful?
 
 The UK Government recently published
+
+## Docker-Neo4j instance
+
+## Publication of a network visualisation options
+
+
 ## Conclusion
 
  
@@ -238,10 +316,12 @@ The UK Government recently published
 ## References
 
 * Barbasi, A. [Network Science book](http://networksciencebook.com/).  
+* Borrelli, J. [Simple Food Web Plotting](https://jjborrelli.github.io/post/simple-food-web-plotting/).  
 * Saddler, J. [Network analysis with R](https://www.jessesadler.com/post/network-analysis-with-r/).  
 * Ognyanova, K. (2016) Network analysis with R and igraph: NetSci X Tutorial. Retrieved from www.kateto.net/networks-r-igraph  
 * [SysMIC course](https://sysmic.ac.uk/). Section 1.1.  
 * A [bunch of useful references and papers](http://networksciencebook.com/chapter/2#bibliography2).  
+* [Tidygraph author blog](https://www.data-imaginist.com/).  
 
 
 ```{r}
