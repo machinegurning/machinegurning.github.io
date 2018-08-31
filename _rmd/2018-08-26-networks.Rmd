@@ -255,7 +255,7 @@ For our example above we can make use of the `LETTERS` object.
 # in Neo4j CamelCase is preferred for nodes
 node_list <- node_list %>%
   mutate(
-    species_name = paste("Species", LETTERS[id])
+    species_name = LETTERS[id]
          )
 # we can use species_name if we want to visualise
 node_list
@@ -282,27 +282,57 @@ food_web
 
 In this format we can now plot using the `ggplot2`-like package `ggraph` (pronounced g-giraffe or g-g-raff). See the [manual](https://cran.r-project.org/web/packages/ggraph/ggraph.pdf) for details or this [blog post](https://www.jessesadler.com/post/network-analysis-with-r/).  
 
-```{r}
+```{r 2018-08-26-soil_web2}
 library(ggraph)
 
 ggraph(food_web, layout = "linear") + 
   geom_edge_arc(aes(width = prop_of_diet,
-                    arrow = TRUE), alpha = 0.8) + 
+                    arrow = TRUE), alpha = 0.3) + 
   scale_edge_width(range = c(0.2, 2)) +
   geom_node_text(aes(label = species_name),
-                 size = 2, color = "red") +
+                 size = 5, color = "red",
+                 position = "identity") +
   labs(edge_width = "Proportion of diet") +
   theme_graph()
 
 ```
 
+As you can see there's a whole bunch of options and customisation depth that can be explored using the help or manual for `ggraph`.  
 
+This example provided the basics but lets scale things up a bit to data sets encountered by smaller organisations where its still comfortable to store the data using conventional means rather than using a graph database (often [real world networks](http://networksciencebook.com/chapter/2/#table-2-1) can get quite big!).  
 
 ## A real example - Government Innovation and Emerging Technology useage
 
-Two tidy data frames can hold our data, but why is this format useful?
+With the popularisation of terms such as "social network" over the last decade, organisations are becoming more adept at spotting networks and the opportunity for using network science to provide business insight.  
 
-The UK Government recently published
+The UK Government recently published a good example. In 2017, the Director General of the Government Digital Service (GDS) commissioned a [landscape review of technology innovation across government](https://www.gov.uk/government/publications/technology-innovation-in-government-survey/technology-innovation-in-government-survey) from an independent contractor (a non-random or convenience survey thus likely to have sampling bias). The accrued information was transliterated into a machine readable format by the Innovation Team of the [Government Digital Service](https://www.gov.uk/government/publications/government-innovation-and-emerging-technology-underlying-data-set). The data shows the state of cross-government emerging technology use. We explore this data in R to act as a case study for other organisations.  
+
+The data is provided as an [edge list](https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/734840/Government_Innovation_and_Emerging_Technology_network_graph-edges__1__-_Government_Innovation_and_Emerging_Technology_network_graph-edges__1_.csv/preview) and [node list](https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/734841/Government_Innovation_and_Emerging_Technology_network_graph-nodes__1_.csv/preview) as described earlier. This makes it straight forward to explore in R.  
+
+## The data
+
+Read the data.  
+
+The nodes are of different types. Here we've loaded the data into Neo4j and got the schema or map of relationships that this network captures. 
+
+## What can network analysis tell us?
+
+Typically network analysis can be used to explore relationships in social or professional networks like this. We might be interested in asking questions like:
+
+* How many connections does each organisation have?
+* Who is the most connected (i.e. influential or “important”) person?
+Are there clusters of tightly connected people?
+Are there a few key players that connect clusters of people?
+etc.
+These answers can give us a lot of information about the patterns of how people interact. 
+
+### Read the data
+
+## Publishing your network
+
+A nice [interactive visualisation](https://graphcommons.com/graphs/406e9195-962e-42e6-abf7-8ed2739655c3__01f6e9de?sel=86e87279-5a15-43ba-ba40-30abd273b109&auto=true&show=info) is provided that uses [Graph Commons](https://graphcommons.com/). You can filter by node and do some basic network analysis using this platform (including clustering).  
+
+There are many [sensible alternatives](https://neo4j.com/developer/guide-data-visualization/), especially if you are looking to scale your network visualisation and analysis. For this you should look to something that uses Neo4j graph database as its backend.  
 
 ## Docker-Neo4j instance
 
