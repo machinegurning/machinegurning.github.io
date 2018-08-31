@@ -329,31 +329,71 @@ inno
 
 Printing out the two tidy tibbles of our nodes and edges is similar to looking at one tibble. However, from our musings earlier we discussed how it doesn't make sense to represent our graph as one tidy dataframe thus we have to "activate" our focus onto either the `Node Data` or the `Edge Data`. This is shown above by the `(active)` next to the `Node Data`.  
 
-The notion of an active tibble within a `tbl_graph` object makes it possible to manipulate the data in one tibble at a time. The nodes tibble is activated by default, but you can change which tibble is active with the `activate()` function (two new pipes have been added that performs the activate step implicitly: `%N>%` will activate nodes and `%E>%` will activate edges). Thus, if we wanted to filter the rows in the edges tibble to list those associated with just the Government Digital Service, we could use `activate()` and then `filter()`. Here we simply print out the result rather than saving it.  
+The notion of an active tibble within a `tbl_graph` object makes it possible to manipulate the data in one tibble at a time. The nodes tibble is activated by default, but you can change which tibble is active with the `activate()` function (two new pipes have been added that performs the activate step implicitly: `%N>%` will activate nodes and `%E>%` will activate edges). Thus, if we wanted to filter the rows in the edges tibble to list those projects that use deep learning, we could use `activate()` and then `filter()`. Here we simply print out the result rather than assigning it (we use the implicit `%E>%` pipe with activate operator).  
 
 ```{r}
-
+# What happens if you remove the E? (you don't activate edges?)
+inno %E>%
+  filter(`To Name` == "Deep Learning")
 ```
 
 The [newer versions](https://www.data-imaginist.com/2018/tidygraph-1-1-a-tidy-hope/) of `tidygraph` also introduces `morph()` allowing you to make tempoary topology changes to your network.  
+
+This takes some getting use to, to create the query you want.  We suggest consulting the manual for more options. We give a few other examples below.  
+
+We can also do network-sciency things as well as the standard `dplyr` fare.  
+
+```{r}
+inno %>%
+  # Remove isolated nodes
+  activate(nodes) %>%
+  # drop isolated nodes
+  filter(!node_is_isolated())
+  
+```
+
+
 ### inno schema
 
 The nodes are of different types. Here we've loaded the data into Neo4j and got the schema or map of relationships that this network captures (we discuss this in a later section).  
 
+This is trivial when using Docker. We can create a Neo4j instance that runs locally on our browser into which we can load our data.  
+
 ![](./figures/2018-08-26-gov_schema.png)
 
-`PublicOrganisations` like "Government Digital Service" CONTRIBUTE to `Projects`, sometimes collaborating with other `PublicOrganisations` or `PrivateOrganisations`. These projects USE a named `Technology` which is considered by the authors to be an emerging or innovative technology.  
+`PublicOrganisation`s like "Government Digital Service" CONTRIBUTE to `Projects`, sometimes collaborating with other `PublicOrganisations` or `PrivateOrganisations`. These projects USE a named `Technology` which is considered by the authors to be an emerging or innovative technology.  
 
 ## What can network analysis tell us?
 
+While visualisations are useful, sometimes they can be overused, as evident when shown a hairball. What we need is a series of logical operation or functions that can be piped together as with `dplyr`.  
+
+To answer our questions we need to remember that the main data structure of tidygraph is a `tbl_graph` which can be thought of as two tibbles with data for nodes and edges. Inspecting the `Edge Data` tibble values in the `from` and `to` we can see the row indices of the nodes stored in the `Node Data` tibble.  
+
 Typically network analysis can be used to explore relationships in social or professional networks like this. We might be interested in asking questions like:
 
-* How many connections does each organisation have?
-* Who is the most connected (i.e. influential or “important”) person?
-Are there clusters of tightly connected people?
-Are there a few key players that connect clusters of people?
-etc.
-These answers can give us a lot of information about the patterns of how people interact. 
+### How many connections does each organisation have?  
+
+There are many different ways to assign importance to nodes, we can use the `?centrality_` to help list some options. The centrality of a node measures the importance of node in the network. As the concept of importance is ill-defined and dependent on the network and the questions under consideration, many centrality measures exist.  
+
+```{r}
+# the seriation package is required for this
+popularity <- inno %>%
+  activate(nodes) %>%
+  mutate(centrality = centrality_pagerank())
+
+popularity %>%
+  arrange(centrality)
+
+```
+
+
+* Who is the most connected (i.e. influential or “important”) organisation?  
+
+
+
+* Are there clusters of tightly connected organisations?  
+*  Are there a few key players that connect clusters of organisations?  
+* These answers can give us a lot of information about the patterns of how organisations interact across Government.  
 
 ### Read the data
 
@@ -362,8 +402,6 @@ These answers can give us a lot of information about the patterns of how people 
 A nice [interactive visualisation](https://graphcommons.com/graphs/406e9195-962e-42e6-abf7-8ed2739655c3__01f6e9de?sel=86e87279-5a15-43ba-ba40-30abd273b109&auto=true&show=info) is provided that uses [Graph Commons](https://graphcommons.com/). You can filter by node and do some basic network analysis using this platform (including clustering).  
 
 There are many [sensible alternatives](https://neo4j.com/developer/guide-data-visualization/), especially if you are looking to scale your network visualisation and analysis. For this you should look to something that uses Neo4j graph database as its backend.  
-
-## Docker-Neo4j instance
 
 ## Publication of a network visualisation options
 
@@ -376,11 +414,13 @@ There are many [sensible alternatives](https://neo4j.com/developer/guide-data-vi
 
 * Barbasi, A. [Network Science book](http://networksciencebook.com/).  
 * Borrelli, J. [Simple Food Web Plotting](https://jjborrelli.github.io/post/simple-food-web-plotting/).  
+* Pederson, T. L. [Author of ggraph Github](https://github.com/thomasp85/).  
 * Saddler, J. [Network analysis with R](https://www.jessesadler.com/post/network-analysis-with-r/).  
 * Ognyanova, K. (2016) Network analysis with R and igraph: NetSci X Tutorial. Retrieved from www.kateto.net/networks-r-igraph  
 * [SysMIC course](https://sysmic.ac.uk/). Section 1.1.  
 * A [bunch of useful references and papers](http://networksciencebook.com/chapter/2#bibliography2).  
 * [Tidygraph author blog](https://www.data-imaginist.com/).  
+* [Tidygraph presentation](https://www.rstudio.com/resources/videos/tidying-up-your-network-analysis-with-tidygraph-and-ggraph/).  
 
 
 ```{r}
