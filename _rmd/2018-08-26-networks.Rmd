@@ -311,9 +311,38 @@ The data is provided as an [edge list](https://www.gov.uk/government/uploads/sys
 
 ## The data
 
-Read the data.  
+Read the data into R and create a `tbl_graph` object. We inspect the data online beforehand and notice a lot of missing data for some column types. All the `Weights` appear to be set to 1 so are meaningless. This is likely the data output from the Graph Commons export as csv. You can see this for yourself when we print our `tbl_graph` named `inno`.     
 
-The nodes are of different types. Here we've loaded the data into Neo4j and got the schema or map of relationships that this network captures. 
+```{r}
+
+edge_list <- readr::read_csv("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/734840/Government_Innovation_and_Emerging_Technology_network_graph-edges__1__-_Government_Innovation_and_Emerging_Technology_network_graph-edges__1_.csv", col_names = TRUE)
+
+
+  
+node_list <- readr::read_csv("https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/734841/Government_Innovation_and_Emerging_Technology_network_graph-nodes__1_.csv", col_names = TRUE)
+
+inno <- tbl_graph(nodes = node_list, edges = edge_list, 
+                  directed = TRUE)
+
+inno
+```
+
+Printing out the two tidy tibbles of our nodes and edges is similar to looking at one tibble. However, from our musings earlier we discussed how it doesn't make sense to represent our graph as one tidy dataframe thus we have to "activate" our focus onto either the `Node Data` or the `Edge Data`. This is shown above by the `(active)` next to the `Node Data`.  
+
+The notion of an active tibble within a `tbl_graph` object makes it possible to manipulate the data in one tibble at a time. The nodes tibble is activated by default, but you can change which tibble is active with the `activate()` function (two new pipes have been added that performs the activate step implicitly: `%N>%` will activate nodes and `%E>%` will activate edges). Thus, if we wanted to filter the rows in the edges tibble to list those associated with just the Government Digital Service, we could use `activate()` and then `filter()`. Here we simply print out the result rather than saving it.  
+
+```{r}
+
+```
+
+The [newer versions](https://www.data-imaginist.com/2018/tidygraph-1-1-a-tidy-hope/) of `tidygraph` also introduces `morph()` allowing you to make tempoary topology changes to your network.  
+### inno schema
+
+The nodes are of different types. Here we've loaded the data into Neo4j and got the schema or map of relationships that this network captures (we discuss this in a later section).  
+
+![](./figures/2018-08-26-gov_schema.png)
+
+`PublicOrganisations` like "Government Digital Service" CONTRIBUTE to `Projects`, sometimes collaborating with other `PublicOrganisations` or `PrivateOrganisations`. These projects USE a named `Technology` which is considered by the authors to be an emerging or innovative technology.  
 
 ## What can network analysis tell us?
 
