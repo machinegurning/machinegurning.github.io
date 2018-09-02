@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
   )
 ```
 
-The universe is hopelessly complicated. Within it are systems that make the mind boggle. Think of the number of interconnected neurons in your brain required to understand this sentence ( [connectome](http://www.humanconnectomeproject.org/)); and the [network of interactions](https://en.wikipedia.org/wiki/Gene_regulatory_network) between genes, proteins and metabolites required to make the [cellular network](https://www.humancellatlas.org/) that is prereqisite to life.  
+The universe is hopelessly complicated. Within it are systems that make the mind boggle. Think of the number of interconnected neurons in your brain required to understand this sentence ( [connectome](http://www.humanconnectomeproject.org/)); and the [network of interactions](https://en.wikipedia.org/wiki/Gene_regulatory_network) between genes, proteins and metabolites required to make the [cellular network](https://www.humancellatlas.org/) that is prereqisite to life (Barbasi, 2018).  
 
 > “I think the next century will be the century of complexity.” - Stephen Hawking  
 
@@ -43,16 +43,17 @@ The objectives of this post are to:
 
 * use a simple example to teach you the fundamental units and language of network science.  
 * provide links to other resources for more code examples.  
-* convert a real world business example into a graph data base using Docekr and Neo4j.  
+* use R to understand a real world business example network and answer typical questions.  
+* consider converting into a graph data base using Docker and Neo4j.  
 * provide some interactive visualisation options that scale.    
 
 ## Your first network
 
-This is probably not your first run-in with network science. Did you ever draw a food web at school? Let's use R to recreate and relive that joy of sketching a simple food web. We'll use this to understand the fundamentals of networks that will scaffold our understanding to visualising and analysing a more complicated real world business data set. This will allow you to spot the opportunity for using graphs and network science to solve a range of problems in your organisation.    
+This is probably not your first run-in with network science. Did you ever draw a food web at school? Let's use R to recreate and relive that joy of sketching a simple food web. We'll use this to understand the language fundamentals of networks that will scaffold our understanding to visualising and analysing a more complicated real world business data set. This will allow you to spot the opportunity for using graphs and network science to solve a range of problems in your organisation.    
 
 ## Graph fundamentals
 
-Soil science isn't widely regarded as being sexy but my [co-blogger](https://dspace.lib.cranfield.ac.uk/handle/1826/9298) might disagree with this assertion. To help promote this important discipline we use it is our basis for a food web and a model complex system (which we greatly simplify).    
+Soil science isn't widely regarded as being sexy but my [co-blogger](https://dspace.lib.cranfield.ac.uk/handle/1826/9298) might disagree with this assertion. To help promote this important discipline we use it is our basis for a [soil food web](https://en.wikipedia.org/wiki/Soil_food_web) and a model complex system (which we greatly simplify).    
 
 A food web is an extension of the concept of a food chain which allows for a more detailed description of how species depend on each other. A food web can be modelled via a graph in which the nodes (or vertices) represent the species and the edges (links or relationships) represent feeding connections; an edge from node A to node B indicates species B consumes species A. Note how there is a direction to the edge; FROM one node TO another, thus we say it is a "directed" graph. We use the `igraph::graph_from_literal` function as it is useful if you want to create a small (named) graph quickly, it works for both directed and undirected graphs.  
 
@@ -62,6 +63,7 @@ From `?` we read that we must supply one or more R expressions giving the struct
 library(igraph)
 
 # build the graph
+# the -+ can be thought of as a directed arrow, from left to right
 soil_web <- graph_from_literal(A -+ B)
 soil_web
 ```
@@ -197,7 +199,7 @@ A quick sense check; does this have the same number of edges as our adjacency ma
 
 ```{r}
 if (nrow(edge_list) == sum(m)) {
-  print("The number of edges in the edge list equals the sum of ones in the adjacency matrix!")
+  print("The number of rows in the edge list equals the sum of ones in the adjacency matrix!")
 }
 ```
 
@@ -286,8 +288,11 @@ In this format we can now plot using the `ggplot2`-like package `ggraph` (pronou
 library(ggraph)
 
 ggraph(food_web, layout = "linear") + 
-  geom_edge_arc(aes(width = prop_of_diet,
-                    arrow = TRUE), alpha = 0.3) + 
+  geom_edge_arc(aes(width = prop_of_diet),
+                arrow = arrow(length = unit(1.5, "mm")), 
+                start_cap = circle(3, "mm"),
+                end_cap = circle(3, "mm"),
+                alpha = 0.5) + 
   scale_edge_width(range = c(0.2, 2)) +
   geom_node_text(aes(label = species_name),
                  size = 5, color = "red",
@@ -299,13 +304,35 @@ ggraph(food_web, layout = "linear") +
 
 As you can see there's a whole bunch of options and customisation depth that can be explored using the help or manual for `ggraph`.  
 
+```{r 2018-08-26-soil_web2b}
+
+food_web %>%
+  ggraph(layout = "nicely") +
+    geom_edge_link(
+      aes(colour = description),
+      arrow = arrow(length = unit(1.5, "mm")),
+      start_cap = circle(3, "mm"),
+      end_cap = circle(3, "mm")
+    ) +
+    geom_node_text(aes(label = species_name), size = 5) +
+    scale_edge_colour_manual(values = c(PREDATES = "#22B022",
+                                        SCAVENGES = "#A4AAF6")) +
+    theme_graph() +
+    labs(
+      title = 'A soil food web',
+      subtitle = "Nodes represent species, edges - energy flow",
+      caption = "@mammykins_"
+    )
+
+```
+
 This example provided the basics but lets scale things up a bit to data sets encountered by smaller organisations where its still comfortable to store the data using conventional means rather than using a graph database (often [real world networks](http://networksciencebook.com/chapter/2/#table-2-1) can get quite big!).  
 
 ## A real example - Government Innovation and Emerging Technology useage
 
 With the popularisation of terms such as "social network" over the last decade, organisations are becoming more adept at spotting networks and the opportunity for using network science to provide business insight.  
 
-The UK Government recently published a good example. In 2017, the Director General of the Government Digital Service (GDS) commissioned a [landscape review of technology innovation across government](https://www.gov.uk/government/publications/technology-innovation-in-government-survey/technology-innovation-in-government-survey) from an independent contractor (a non-random or convenience survey thus likely to have sampling bias). The accrued information was transliterated into a machine readable format by the Innovation Team of the [Government Digital Service](https://www.gov.uk/government/publications/government-innovation-and-emerging-technology-underlying-data-set). The data shows the state of cross-government emerging technology use. We explore this data in R to act as a case study for other organisations.  
+The UK Government recently published a good example. In 2017, the Director General of the Government Digital Service (GDS) commissioned a [landscape review of technology innovation across government](https://www.gov.uk/government/publications/technology-innovation-in-government-survey/technology-innovation-in-government-survey) from an independent contractor (a non-random or convenience survey: likely to have sampling bias). The accrued information was transliterated into a machine readable format by the Innovation Team of the [Government Digital Service](https://www.gov.uk/government/publications/government-innovation-and-emerging-technology-underlying-data-set). The data shows the state of cross-government emerging technology use. We explore this data in R to act as a case study for other organisations.  
 
 The data is provided as an [edge list](https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/734840/Government_Innovation_and_Emerging_Technology_network_graph-edges__1__-_Government_Innovation_and_Emerging_Technology_network_graph-edges__1_.csv/preview) and [node list](https://www.gov.uk/government/uploads/system/uploads/attachment_data/file/734841/Government_Innovation_and_Emerging_Technology_network_graph-nodes__1_.csv/preview) as described earlier. This makes it straight forward to explore in R.  
 
@@ -334,24 +361,27 @@ The notion of an active tibble within a `tbl_graph` object makes it possible to 
 ```{r}
 # What happens if you remove the E? (you don't activate edges?)
 inno %E>%
-  filter(`To Name` == "Deep Learning")
+  filter(`To Name` == "Deep Learning") %>%
+  tidygraph::as_tibble() %>%
+  nrow()
 ```
 
 The [newer versions](https://www.data-imaginist.com/2018/tidygraph-1-1-a-tidy-hope/) of `tidygraph` also introduces `morph()` allowing you to make tempoary topology changes to your network.  
 
-This takes some getting use to, to create the query you want.  We suggest consulting the manual for more options. We give a few other examples below.  
+This takes some getting use to, to create the query you want.  We suggest consulting the [manual](https://rdrr.io/cran/tidygraph/man/) for more options. We give a few other examples below.  
 
-We can also do network-sciency things as well as the standard `dplyr` fare.  
+We can also do network-sciency things as well as the standard `dplyr` fare. Perhaps we want to drop "isolated" nodes, nodes that don't connect with the rest of the network (see `?node_is` for a bunch of useful logical checks that lets the user query whether each node is of a certain type).   
 
 ```{r}
 inno %>%
   # Remove isolated nodes
   activate(nodes) %>%
   # drop isolated nodes
-  filter(!node_is_isolated())
+  filter(!node_is_isolated()) %>%
+  tidygraph::as_tibble() %>%
+  nrow()
   
 ```
-
 
 ### inno schema
 
@@ -387,9 +417,11 @@ popularity %>%
 ```
 
 
-* Who is the most connected (i.e. influential or “important”) organisation?  
+### Who is the most connected (i.e. influential or “important”) organisation?  
 
+### Are there any important bridges of connectedness?
 
+[Connectedness](http://networksciencebook.com/chapter/2#connectedness) is important.
 
 * Are there clusters of tightly connected organisations?  
 *  Are there a few key players that connect clusters of organisations?  
