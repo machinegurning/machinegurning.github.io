@@ -49,6 +49,8 @@ The objectives of this post are to:
 
 ## Your first network
 
+Fundamentally a network is stuff connected to other stuff through a relationship. It's very generaliseable and can be applied to an incredible breadth of problems.  
+
 This is probably not your first run-in with network science. Did you ever draw a food web at school? Let's use R to recreate and relive that joy of sketching a simple food web. We'll use this to understand the language fundamentals of networks that will scaffold our understanding to visualising and analysing a more complicated real world business data set. This will allow you to spot the opportunity for using graphs and network science to solve a range of problems in your organisation.    
 
 ## Graph fundamentals
@@ -249,7 +251,7 @@ For a guide on how to convert a typical dataset into an edge and node list see [
 
 ### Translating from unique id to name
 
-Above we used a unique id for each species but we might want to readily convert back to our human readable name using a dictionary or by storing the name in our edge list. Accessing the dictionary using hashes (i.e. using a specialised package) can outperform native named lists and vectors but if performance is an issue you should probably be storing your graph database in a dedicated graphDB like [Neo4j](https://neo4j.com/).  
+Above we used a unique id for each species but we might want to readily convert back to our human readable name using a dictionary or by storing the name in our edge list (we could also use the ). Accessing the dictionary using hashes (i.e. using a specialised package) can outperform native named lists and vectors but if performance is an issue you should probably be storing your graph database in a dedicated graphDB like [Neo4j](https://neo4j.com/).  
 
 For our example above we can make use of the `LETTERS` object.  
 
@@ -397,9 +399,41 @@ This is trivial when using Docker. We can create a Neo4j instance that runs loca
 
 While visualisations are useful, sometimes they can be overused, as evident when shown a hairball. What we need is a series of logical operation or functions that can be piped together as with `dplyr`.  
 
-To answer our questions we need to remember that the main data structure of tidygraph is a `tbl_graph` which can be thought of as two tibbles with data for nodes and edges. Inspecting the `Edge Data` tibble values in the `from` and `to` we can see the row indices of the nodes stored in the `Node Data` tibble.  
+To answer our questions we need to remember that the main data structure of tidygraph is a `tbl_graph` which can be thought of as two tibbles with data for nodes and edges. Inspecting the `Edge Data` tibble values in the `from` and `to` we can see the row indices of the nodes stored in the `Node Data` tibble (we can use `as_tibble` to access the active tibble).  
 
 Typically network analysis can be used to explore relationships in social or professional networks like this. We might be interested in asking questions like:
+
+### Can we place a value on this network?
+
+[Metcalfe’s law](https://en.wikipedia.org/wiki/Metcalfe%27s_law) states that the value of a network is proportional to the square of the number of its nodes, i.e. N^2^. Formulated around 1980 in the context of communication devices, it implies that as you gain more users the value of your network increases. Indeed, the more of your friends use [WhatsApp](https://www.whatsapp.com/), the more valuable the service is to you.  
+
+```{r}
+# what's the value of our network?
+# what are our nodes of interest?
+# what might we consider our users?
+inno %>%
+  # Remove isolated nodes
+  activate(nodes) %>%
+  # drop isolated nodes
+  filter(Type %in% "PublicOrganisation") %>%
+  tidygraph::as_tibble() %>%
+  nrow() %>%
+  # here i do something weird
+  # Every operation is a function call
+  # Note that `, the backtick,
+  # lets you refer to functions or variables
+  # that have otherwise reserved or illegal names
+  # I raise N to the power of 2, or square it
+  `^`(2)
+
+
+```
+
+Wow that's a big number!? Or is it...  
+
+Two problems with this might spring to mind. Most real networks are sparse; only a small proportion of the total possible edges exist between nodes (the network is very far from being fully connected). Second, not all relationships or edges in your network are of equal value. Some edges are used heavily while most are rarely used. In essence a real network tends to be sparse and cliquey.  
+
+A quick Google reveals some literature on this area for the reader to pursue if interested (Biem & Caswell, 2008).  
 
 ### How many connections does each organisation have?  
 
@@ -411,8 +445,13 @@ popularity <- inno %>%
   activate(nodes) %>%
   mutate(centrality = centrality_pagerank())
 
+# with the stat calculated we rearrange and select variables
+# of interest
 popularity %>%
-  arrange(centrality)
+  arrange(desc(centrality)) %>%
+  as_tibble() %>%
+  select(Name, centrality, Type)
+  
 
 ```
 
@@ -445,6 +484,7 @@ There are many [sensible alternatives](https://neo4j.com/developer/guide-data-vi
 ## References
 
 * Barbasi, A. [Network Science book](http://networksciencebook.com/).  
+* Biem, A., & Caswell, N. (2008). A value network model for strategic analysis, 1–7.  
 * Borrelli, J. [Simple Food Web Plotting](https://jjborrelli.github.io/post/simple-food-web-plotting/).  
 * Pederson, T. L. [Author of ggraph Github](https://github.com/thomasp85/).  
 * Saddler, J. [Network analysis with R](https://www.jessesadler.com/post/network-analysis-with-r/).  
