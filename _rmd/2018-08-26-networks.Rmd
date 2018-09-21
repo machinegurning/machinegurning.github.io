@@ -37,7 +37,7 @@ All is not lost. These seemingly intractably complicated problems can and have b
 
 In addition to the conspicuous applied succeses of network science (e.g. see [Facebook's value](https://www.forbes.com/companies/facebook/)). A key discovery of network science is that the architecture of networks emerging in various domains of science, nature, and technology are similar to each other, a consequence of being governed by the same organizing principles. Consequently we can use a common set of mathematical tools to explore these systems.  
 
-We use R as it has a bunch of [awesome packages for network analysis](https://github.com/qinwf/awesome-R#network-analysis). We also consider how you might deploy a visualisation of your network online.  
+We use R as it has a bunch of [awesome packages for network analysis](https://github.com/qinwf/awesome-R#network-analysis). We also consider how you might deploy a visualisation of your network locally and online.  
 
 The objectives of this post are to:  
 
@@ -45,7 +45,7 @@ The objectives of this post are to:
 * provide links to other resources for more code examples.  
 * use R to understand a real world business example network and answer typical questions.  
 * consider converting into a graph data base using Docker and Neo4j.  
-* provide some interactive visualisation options that scale.    
+* provide some interactive visualisation options that scale with or without dev support.    
 
 ## Your first network
 
@@ -55,9 +55,9 @@ This is probably not your first run-in with network science. Did you ever draw a
 
 ## Graph fundamentals
 
-Soil science isn't widely regarded as being sexy but my [co-blogger](https://dspace.lib.cranfield.ac.uk/handle/1826/9298) might disagree with this assertion. To help promote this important discipline we use it is our basis for a [soil food web](https://en.wikipedia.org/wiki/Soil_food_web) and a model complex system (which we greatly simplify).    
+Soil science isn't widely regarded as being sexy but my [co-blogger](https://dspace.lib.cranfield.ac.uk/handle/1826/9298) might disagree with this assertion. To help promote this important discipline we use it as our basis for a [soil food web](https://en.wikipedia.org/wiki/Soil_food_web) and a model complex system (which we greatly simplify).    
 
-A food web is an extension of the concept of a food chain which allows for a more detailed description of how species depend on each other. A food web can be modelled via a graph in which the nodes (or vertices) represent the species and the edges (links or relationships) represent feeding connections; an edge from node A to node B indicates species B consumes species A. Note how there is a direction to the edge; FROM one node TO another, thus we say it is a "directed" graph. We use the `igraph::graph_from_literal` function as it is useful if you want to create a small (named) graph quickly, it works for both directed and undirected graphs.  
+A food web is an extension of the concept of a food chain which allows for a more detailed description of how species depend on each other. A food web can be modelled via a graph in which the nodes (or vertices) represent the species and the edges (links or relationships) represent feeding connections (energy flow); an edge from node A to node B indicates species B consumes species A. Note how there is a direction to the edge; FROM one node TO another, thus we say it is a "directed" graph. We use the `igraph::graph_from_literal` function as it is useful if you want to create a small (named) graph quickly, it works for both directed and undirected graphs.  
 
 From `?` we read that we must supply one or more R expressions giving the structure of the graph. The expressions consist of vertex names and edge operators. An edge operator is a sequence of ‘-’ and ‘+’ characters, the former is for the edges and the latter is used for arrow heads. The edges can be arbitrarily long, i.e. you may use as many ‘-’ characters to “draw” them as you like (this [tutorial](http://kateto.net/ruworkshop#21_create_networks) provides greater depth and exploration of `igraph` network creation functions).
 
@@ -158,7 +158,7 @@ m
 
 When reading these matrices remember that the rows tell you FROM and the columns TO. So FROM A to B should draw an arrow in your mind from node A to B, thus A eats B.  
 
-This format is machine readable but not particularly human readable. For most graphs it will also be a spare matrix, with mostly zeroes, as most nodes will be unconnected. Sparseness has important consequences on the way we explore and store real networks. For example, when we store a large network in our computer, it is better to store only the list of links to avoid blocking out too much memory.  
+This format is machine readable but not particularly human readable. For most graphs it will also be a sparse matrix, with mostly zeroes, as most nodes will be unconnected. Sparseness has important consequences on the way we explore and store real networks. For example, when we store a large network in our computer, it is better to store only the list of links to avoid blocking out too much memory.  
 
 We introduce the adjacency matrix here as it's quite straight forward and many network packages in R use the adjacency matrix to create specific classes for the appropriate packages (see this [blog by Jesse Saddler](https://www.jessesadler.com/post/network-analysis-with-r/) for some examples).
 
@@ -340,7 +340,7 @@ The data is provided as an [edge list](https://www.gov.uk/government/uploads/sys
 
 ## The data
 
-Read the data into R and create a `tbl_graph` object. We inspect the data online beforehand and notice a lot of missing data for some column types. All the `Weights` appear to be set to 1 so are meaningless. This is likely the data output from the Graph Commons export as csv. You can see this for yourself when we print our `tbl_graph` named `inno`.     
+We read the data into R and create a `tbl_graph` object. We inspect the data online beforehand and notice a lot of missing data for some column types. All the `Weights` appear to be set to 1 so are meaningless. This is likely the data output from the Graph Commons export as csv (we discuss later). You can see this for yourself when we print our `tbl_graph` named `inno`.     
 
 ```{r}
 
@@ -389,7 +389,7 @@ inno %>%
 
 The nodes are of different types. Here we've loaded the data into Neo4j and got the schema or map of relationships that this network captures (we discuss this in a later section).  
 
-This is trivial when using Docker. We can create a Neo4j instance that runs locally on our browser into which we can load our data.  
+This is trivial when using Docker. We can create a [Neo4j instance using Docker](https://hub.docker.com/_/neo4j/) that runs locally on our browser into which we can load our data.  
 
 ![](./figures/2018-08-26-gov_schema.png)
 
@@ -433,7 +433,7 @@ Wow that's a big number!? Or is it...
 
 Two problems with this might spring to mind. Most real networks are sparse; only a small proportion of the total possible edges exist between nodes (the network is very far from being fully connected). Second, not all relationships or edges in your network are of equal value. Some edges are used heavily while most are rarely used. In essence a real network tends to be sparse and cliquey.  
 
-A quick Google reveals some literature on this area for the reader to pursue if interested (Biem & Caswell, 2008).  
+A quick Google reveals some literature on this area for the reader to pursue if interested (Biem & Caswell, 2008). It also might help you create key performance indicators or metrics to capture how well an organisation is doing at increasing its connectivity.    
 
 ### How many connections does each organisation have?  
 
@@ -448,38 +448,115 @@ popularity <- inno %>%
 # with the stat calculated we rearrange and select variables
 # of interest
 popularity %>%
-  arrange(desc(centrality)) %>%
+  arrange((centrality), Name) %>%
   as_tibble() %>%
   select(Name, centrality, Type)
-  
 
 ```
 
+There's not much difference between the centrality of these nodes. Typically most organisations or projects will have just a few interactions, hence all the tied values. The [Page Rank](https://en.wikipedia.org/wiki/PageRank), is named after Larry Page and is a link analysis algorithm. It assigns a numerical weighting to each element in our innovation network, providing a measure of its relative importance within the set. It's not that useful here.     
+
+```{r}
+
+# the joint least popular
+# note we add desc() here
+popularity %>%
+  arrange(desc(centrality)) %>%
+  as_tibble() %>%
+  select(Name, centrality, Type) %>%
+  slice(1)
+
+# the most popular
+# we can use dplyr's useful functions to help, like n()
+popularity %>%
+  arrange(desc(centrality)) %>%
+  as_tibble() %>%
+  select(Name, centrality, Type) %>%
+  slice(n())
+
+```
+
+Find these nodes on the [innovation network map](https://graphcommons.com/graphs/406e9195-962e-42e6-abf7-8ed2739655c3/selection/bb6ff6c4-3fca-493c-bcea-d9cc6fd2c71f?auto=true) (using the search in the top-left) and count the number of edges. How does this compare to other nodes in the network?  
+
+All these functions are derived from the `netrankr` package so consult the [docs for further detail and philosophy](https://rdrr.io/github/schochastics/netrankr/man/netrankr.html).  
 
 ### Who is the most connected (i.e. influential or “important”) organisation?  
+
+There's a whole bunch of useful centrality and grouping strategies described in this excellent [blog post](https://shirinsplayground.netlify.com/2018/03/got_network/) using Game of Thrones characters.  
+
+We implement some of this code from the aforementioned blog here.  
+
+```{r}
+# is this correct?!
+inno %>%  
+  activate(nodes) %>% 
+  mutate(neighbors = centrality_degree()) %>%
+  arrange(-neighbors)
+```
 
 ### Are there any important bridges of connectedness?
 
 [Connectedness](http://networksciencebook.com/chapter/2#connectedness) is important.
 
 * Are there clusters of tightly connected organisations?  
-*  Are there a few key players that connect clusters of organisations?  
+* Are there a few key players that connect clusters of organisations?  
 * These answers can give us a lot of information about the patterns of how organisations interact across Government.  
+* They might help us identify bridges to connect remote areas of Government and share knowledge.  
+* This could act as a knowledge repository of sorts for an orgnanisation.  
 
-### Read the data
+## Extra questions
+
+You can see how structuring the data as a graph and using tidygraph can allow a user to answer the following questions:
+
+* What emerging tech is department X using?  
+* I want to use technology Y, who else is using it?  
+* I'm interested in who's worked on projects to do with topic Z. Who else has done somethign similar?  
+
+## Organisational networks, a hierarchy of employees
+
+We now consider employees in an organisation which can be represented by a tree or a hierarchial network graph.   
 
 ## Publishing your network
+
+### Local options using Docker and neo4j
+
+One can use a [docker file to set-up a Neo4j instance](https://neo4j.com/docs/operations-manual/current/installation/docker/) and then load in your edges and nodes [following these instructions](https://neo4j.com/developer/guide-import-csv/).  
+
+ Here's a shell script that will spin up your instance and create the necessary directories to put your edge and node csvs. See the guidance above and complete a Docker tutorial before attempting this. We've including this script to save you some time in providing the necessary arguments for your docker instance. The code below will only make sense after completing some tutorials on Docker and Neo4j.   
+
+```{r eval=FALSE}
+#!/bin/zsh
+awhile=2
+echo "Be prepared to wait ~10 s for the docker instance to start;
+try refreshing browser after brief wait."
+# take a while for instance to run
+sleep $awhile && open http://localhost:7474/ & 
+# think of the foo && bar & as an async call
+# that guarantees foo will finish before bar is called
+docker run \
+    --publish=7474:7474 --publish=7687:7687 \
+    --volume=$HOME/neo4j/data:/data \
+    --volume=$HOME/neo4j/logs:/logs \
+    --volume=$HOME/neo4j/import:/import \
+    --env=NEO4J_AUTH=none \
+    neo4j
+    
+    # for docker neo4j setup see
+    # https://neo4j.com/developer/docker-23/
+
+exit
+```
+
+
+### Online if non-sensitive
 
 A nice [interactive visualisation](https://graphcommons.com/graphs/406e9195-962e-42e6-abf7-8ed2739655c3__01f6e9de?sel=86e87279-5a15-43ba-ba40-30abd273b109&auto=true&show=info) is provided that uses [Graph Commons](https://graphcommons.com/). You can filter by node and do some basic network analysis using this platform (including clustering).  
 
 There are many [sensible alternatives](https://neo4j.com/developer/guide-data-visualization/), especially if you are looking to scale your network visualisation and analysis. For this you should look to something that uses Neo4j graph database as its backend.  
 
-## Publication of a network visualisation options
-
-
 ## Conclusion
 
- 
+ This post
 
 ## References
 
