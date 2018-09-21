@@ -5,7 +5,7 @@ comments: yes
 date: '2018-08-26'
 modified: `r format(Sys.time(), '%Y-%m-%d')`
 layout: post
-excerpt: "How can network science help?"
+excerpt: "How network science can help"
 published: FALSE
 status: process
 tags:
@@ -614,7 +614,24 @@ ggraph(graph, 'partition', circular = TRUE) +
 
 Can you pick out the lucky manager at `depth 2` who only manages two people?
 
-You can imagine how the above would help you quickly do the necessary sums and aggregations at the organisational level of interest. Powerful stuff!  
+You can imagine how the above would help you quickly do the necessary sums and aggregations at the organisational level of interest.  
+
+### Calculating cumulative means for the simulated variable
+
+What about calculating cumulative means for survey results at different business unit levels?  
+
+```{r}
+tg_org_indiv_df %>%
+  group_by(unit_id) %>%
+  dplyr::summarise(test_var = mean(test_var),
+                   test_var2 = mean(test_var2))
+```
+
+#### Cumulative means in nested business units
+
+Often we don't necessarily want to know the mean for just the people directly associated with an organisational unit, but the mean for all people associated with the current unit _and its children_.  
+
+The vignette for `orgsurveyr` demonstrates how.  
 
 ## Publishing your network
 
@@ -656,7 +673,7 @@ There are many [sensible alternatives](https://neo4j.com/developer/guide-data-vi
 
 ## Conclusion
 
- This post
+This post introduced the fundamentals of network science and used it to create progressively more complicated networks and scratched the surface of some of the questions that can be asked of data structured in this way.  
 
 ## References
 
