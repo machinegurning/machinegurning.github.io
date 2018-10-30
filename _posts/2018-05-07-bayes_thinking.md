@@ -200,7 +200,7 @@ Our workflow involves building a prior distribution that matches our knowledge, 
  
 #### Constructing a beta prior
  
-Suppose we are interested in the proportion, p, of students that improve their grit score after an intervention. The function `bayes.select` is a convenient tool for specifying a beta prior based on knowledge of two prior quantiles. Suppose my prior median for the proportion of improving students is `0.5` and my 75th percentile is `.6` based on my historical data of students' grit scores the previous year.    
+Suppose we are interested in the proportion, _p_, of students that improve their grit score after an intervention. The function `bayes.select` is a convenient tool for specifying a beta prior based on knowledge of two prior quantiles. Suppose my prior median for the proportion of improving students is `0.5` and my 75th percentile is `.6` based on my historical data of students' grit scores the previous year.    
  
 We need to convert this knowledge into a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution). The beta disitribution has two shape parameters (called alpha and beta). We use the convenient `beta.select` to work this out for us. There are alternative methods to estimating the hyper-parameters of your distribution of interest described in David Robinson's excellent book on [Empirical Bayes](http://varianceexplained.org/r/empirical-bayes-book/).    
  
@@ -216,7 +216,7 @@ beta.par
 ## [1] 5.82 5.82
 {% endhighlight %}
  
-A beta(5.82, 5.82) prior matches this prior information.  
+A `beta(5.82, 5.82)` prior matches this prior information.  
  
 #### Updating with data
  
