@@ -297,7 +297,7 @@ head(filter(pipe_df, a == 0, b == 0, c  == 0, d == sum(initialState)), n = 1)
 ```
 
 ## Extension
-We can use this code to change the various transition probabilities to see what the effects are on the outputs (sensitivity analysis) through [visual inspection](http://www.machinegurning.com/rstats/map_df/) and consider what transition probabilities would strike the right balance (repair and maintenance allows state reversion, from states c and d back to a). Also, there are methods we could use to perform uncertainty analysis, e.g. putting confidence intervals around the transition probabilities. We won't do either of these here. This type of decision modelling scenario is perfect for Shiny app implementation!
+We can use this code to change the various transition probabilities to see what the effects are on the outputs (sensitivity analysis) through [visual inspection](http://www.machinegurning.blog/rstats/map_df/) and consider what transition probabilities would strike the right balance (repair and maintenance allows state reversion, from states c and d back to a). Also, there are methods we could use to perform uncertainty analysis, e.g. putting confidence intervals around the transition probabilities. We won't do either of these here. This type of decision modelling scenario is perfect for Shiny app implementation!
 
 ## References
 * Gregory, M., Alphey, L., Morrison, N. I., & Shimeld, S. M. (2016). Insect transformation with piggyBac : getting the number of injections just right. Insect Molecular Biology, http://doi.org/10.1111/imb.12220

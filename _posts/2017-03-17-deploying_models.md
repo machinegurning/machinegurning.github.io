@@ -26,7 +26,7 @@ This blog post draws heavily on Chapter 10 in the excellent [Practical Data Scie
  
 To understand the different layers of a [full-stack](https://www.quora.com/What-does-the-term-full-stack-programmer-mean) development it can be useful to produce a reference deployment of your model. This can be a good way to jump-start deployment as it can allow experienced engineers (who are better suited to true production deployment) to tinker and experiment with your work, test [corner cases](https://en.wikipedia.org/wiki/Corner_case) and build [acceptance tests](https://en.wikipedia.org/wiki/Acceptance_testing).  
  
-We'll work through using the [Student Performance dataset](https://archive.ics.uci.edu/ml/datasets/Student+Performance) that we have seen a few times on this [blog](http://www.machinegurning.com/rstats/student-performance/). We are interested in predicting whether students are likely to pass or fail their end of year exam (`G3` variable above a made-up threshold of 10). Again we use the Maths results only reading off the web from our [Github data repo](https://github.com/machinegurning/machinegurning.github.io/tree/master/data).  
+We'll work through using the [Student Performance dataset](https://archive.ics.uci.edu/ml/datasets/Student+Performance) that we have seen a few times on this [blog](http://www.machinegurning.blog/rstats/student-performance/). We are interested in predicting whether students are likely to pass or fail their end of year exam (`G3` variable above a made-up threshold of 10). Again we use the Maths results only reading off the web from our [Github data repo](https://github.com/machinegurning/machinegurning.github.io/tree/master/data).  
  
 
 {% highlight r %}

@@ -34,7 +34,7 @@ knitr::opts_chunk$set(
 
 Data tables in the form of spreadsheets are ubiquitous in enterprise. For better or worse, they are the Swiss Army Knife (or [cockroaches](https://blog.kinaxis.com/2010/08/how-are-spreadsheets-like-cockroaches/)) for decision support in many organisations.  
 
-Why are they so [popular](https://twitter.com/pudo/status/248473299741446144?lang=en) and widely used? That's not the focus of this blog, instead we focus on how you might go about automating the classification of spreadsheets without manually having to open and inspect them. We use some of the techniques we used in [previous posts](http://www.machinegurning.com/rstats/tsne/) to represent a spreadsheet as a matrix (empty or not-empty cells) and attempt dimension reduction. We also focus on feature extraction of spreadsheets by reviewing the literature and drawing from the experience of experts who do [PhDs on this sort of thing](http://www.felienne.com/about-3).  
+Why are they so [popular](https://twitter.com/pudo/status/248473299741446144?lang=en) and widely used? That's not the focus of this blog, instead we focus on how you might go about automating the classification of spreadsheets without manually having to open and inspect them. We use some of the techniques we used in [previous posts](http://www.machinegurning.blog/rstats/tsne/) to represent a spreadsheet as a matrix (empty or not-empty cells) and attempt dimension reduction. We also focus on feature extraction of spreadsheets by reviewing the literature and drawing from the experience of experts who do [PhDs on this sort of thing](http://www.felienne.com/about-3).  
 
 In this post we refer to workbooks as spreadsheets and worksheets as sheets.
 
@@ -387,7 +387,7 @@ We notice the left-handedness of the images as this matches the typical zoom and
 
 Unfortunately we lack a suitable label for the worksheets (i.e. tidy, or contains an error) which means we are in the unenvious position of having to make sense of the spreadsheets using dimension reduction techniques. The plots above are effective when interpreted by a human for getting a sense of the shape of the data in a sheet (and could be extended by using different colours for different cell contents type e.g. formula, error, number etc.) but can we capture the essence of how sheets are filled using dimension reduction techniques? We could then automate our interpretation of a sheet without having to look at it. Useful when most organisations are drowning in spreadsheets.   
 
-We plot the row numbers so we can look up and compare the worksheets that are clustered together. Remember with t-SNE, rather than keeping dissimilar data points apart (like linear methods i.e. PCA), t-SNE keeps the low-dimensional representations of very similar data-points close together on a low-dimensional, non-linear manifold (CAVEAT: when using t-SNE in my previous [blog post](http://www.machinegurning.com/rstats/tsne/) we learnt some important lessons).  
+We plot the row numbers so we can look up and compare the worksheets that are clustered together. Remember with t-SNE, rather than keeping dissimilar data points apart (like linear methods i.e. PCA), t-SNE keeps the low-dimensional representations of very similar data-points close together on a low-dimensional, non-linear manifold (CAVEAT: when using t-SNE in my previous [blog post](http://www.machinegurning.blog/rstats/tsne/) we learnt some important lessons).  
 
 Bear in mind if the worksheets by the same author are organised sequentially by row number. Thus we could have used row number as our plotting font to give this extra bit of info, however you'll need to manually inspect them afterwards to work out why they are close together following t-SNE.
 
@@ -566,7 +566,7 @@ This demonstrable clustering of spreadsheets around "evolutionary" groups was id
 
 ### t-SNE extension
 
-Given some labels for our spreadsheets, we could employ the same strategy used for the MNIST digit data set and described in our last [blog post](http://www.machinegurning.com/rstats/tsne/), where we use Support Vector Machines to train on our t-SNE'ed data.  
+Given some labels for our spreadsheets, we could employ the same strategy used for the MNIST digit data set and described in our last [blog post](http://www.machinegurning.blog/rstats/tsne/), where we use Support Vector Machines to train on our t-SNE'ed data.  
 
 #### Once I have a t-SNE map, how can I embed incoming test points in that map?
 

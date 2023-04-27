@@ -1,8 +1,8 @@
 # Site wide configuration
 
-title:            machinegurning.com
+title:            machinegurning.blog
 locale:           en_GB
-url:              https://www.machinegurning.com
+url:              https://www.machinegurning.blog
 
 
 # Jekyll configuration

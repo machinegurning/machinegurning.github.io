@@ -68,7 +68,7 @@ hist(mydata$G3)
 ## The magical black box that is the neural networks
 `G3` is pretty normally distributed, despite the dodgy tail. Previously we converted it into a binary output and then used a decision tree approach to make predictions from associated student characteristics. We use the neural network approach here while maintaining `G3` as an integer variable with a range of 1-20.
 
-First we start off by identifying variables we think will be useful based on expert domain knowledge. We then [normalise](http://www.machinegurning.com/rstats/student-performance/) the continuous variables to ensure equal weighting when measuring distance and check for missing values.
+First we start off by identifying variables we think will be useful based on expert domain knowledge. We then [normalise](http://www.machinegurning.blog/rstats/student-performance/) the continuous variables to ensure equal weighting when measuring distance and check for missing values.
 
 ```{r, echo = FALSE}
 
@@ -96,7 +96,7 @@ data_interest$G3 <- normalise(data_interest$G3)
 ```
 
 ## Training and test datasets.
-We need to split the data so we can build the model and then test it, to see if it generalises well. The data arrived in a random order so we split it in an analagous way to how we did it with the [decision tree](http://www.machinegurning.com/rstats/student-performance/) method.
+We need to split the data so we can build the model and then test it, to see if it generalises well. The data arrived in a random order so we split it in an analagous way to how we did it with the [decision tree](http://www.machinegurning.blog/rstats/student-performance/) method.
 
 ```{r, echo = TRUE}
 

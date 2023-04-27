@@ -232,7 +232,7 @@ identical(y,Y[,1])
 # Least squares
 
 Ok, this is all well and good, we can make a prediction $Y=X^T\beta$, but how on earth do we get $\beta$.
-In previous posts, I variously used [gradient descent](http://www.machinegurning.com/rstats/gradient-descent/), the [BFGS](http://www.machinegurning.com/rstats/R_classes/) algorithm, and the 'normal equation' or least squares method, which is what I will reproduce here.
+In previous posts, I variously used [gradient descent](http://www.machinegurning.blog/rstats/gradient-descent/), the [BFGS](http://www.machinegurning.blog/rstats/R_classes/) algorithm, and the 'normal equation' or least squares method, which is what I will reproduce here.
 
 This method provides an exact solution for a given linear model, which is handy, but there are situations where this method may not be appropriate.
 The main issue with the normal equation, is that when dealing with very large amounts of data i.e. $n>10,000$ then the imperative to solve the matrix inverse $(X^TX)^{-1}$ means that it can be computationally expensive.

@@ -93,7 +93,7 @@ ggpairs(train,
 ![plot of chunk 2017-01-04-splom](/figures/2017-01-04-splom-1.svg)
  
 First look at the density plots on the diagonals which are "sorta" histograms for the associated variable (read off the column or row, they are the same). 
-Helpfully they lie between zero and one, no need to [normalise](http://www.machinegurning.com/rstats/student-performance/), thanks Kaggle! 
+Helpfully they lie between zero and one, no need to [normalise](http://www.machinegurning.blog/rstats/student-performance/), thanks Kaggle! 
 The lower panel visualises all interactions and may indicate which ones are useful for distinguishing between Monster classes (read off from the y axis and the x axis to identify the interaction being plotted). 
 We can even quantify these correlations as shown in the top panel for those of us who prefer numbers to graphics ("Boo!" said the Ghost). 
 The corporeal monsters appear more similar than their ethereal counterpart. 

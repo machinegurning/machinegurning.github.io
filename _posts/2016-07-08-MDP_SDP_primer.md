@@ -24,7 +24,7 @@ This is the first part of a two part series of blog posts on how to solve and / 
  
 Decision makers are faced with complex policy decisions where they are expected to maximise immediate utility for stakeholder value but not at the expense of future stakeholders' interests. The effect of the current action determined through policy thus contributes to both current utility and to future utility through its effect on the future state of the system. In Stochastic dynamic programming (SDP) is the a relevant tool for determining an optimal sequence of decisions over time and was developed through applied mathematics.The principle of SDP relies on the partitioning of a complex problem in simpler subproblems across several steps that, once solved, are combined to give an overall solution.   
  
-Markov Decision Processes (MDPs) are made of two components: Markov chains that model the uncertain future states of the system given an initial state and a decision model. First, a MDP is a Markov chain in which the system undergoes successive transitions from one state to another through time, as in our previous post on [discrete time markov chains](http://www.machinegurning.com/rstats/markov_chain_discrete/). Second, a MDP involves a decision-making process in which an action is being implemented at each sequential state transition.
+Markov Decision Processes (MDPs) are made of two components: Markov chains that model the uncertain future states of the system given an initial state and a decision model. First, a MDP is a Markov chain in which the system undergoes successive transitions from one state to another through time, as in our previous post on [discrete time markov chains](http://www.machinegurning.blog/rstats/markov_chain_discrete/). Second, a MDP involves a decision-making process in which an action is being implemented at each sequential state transition.
  
 The process can be broken down into six steps:
  
@@ -83,7 +83,7 @@ dtmc
 ## d 0.0 0.0 0.0 1.0
 {% endhighlight %}
  
-We can determine the condition of our pipes through time as discussed in our [prevous post](http://www.machinegurning.com/rstats/markov_chain_discrete/). But what if we made a stand against entropy and used some of our maintenance budget to repair pipes?
+We can determine the condition of our pipes through time as discussed in our [prevous post](http://www.machinegurning.blog/rstats/markov_chain_discrete/). But what if we made a stand against entropy and used some of our maintenance budget to repair pipes?
  
 Say we could afford to replace five pipes of condition d (thus making them a) each year. What would this investment look like compared to no investment in repair? How would it affect the backlog?
  

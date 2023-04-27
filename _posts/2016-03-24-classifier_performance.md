@@ -70,7 +70,7 @@ Let's have a look at our data using the convenient `glimpse` courtesy of the `dp
 ## $ final    (fctr) fail, fail, pass, pass, pass, pass, pass, fail, pass...
 {% endhighlight %}
  
-In an earlier [post](http://www.machinegurning.com/rstats/student-performance/) we describe all the steps for building this decision tree classifier in detail, we will not repeat that here but instead carry on and attempt to evaluate the classifier's performance. The model looked like this:
+In an earlier [post](http://www.machinegurning.blog/rstats/student-performance/) we describe all the steps for building this decision tree classifier in detail, we will not repeat that here but instead carry on and attempt to evaluate the classifier's performance. The model looked like this:
  
 
 {% highlight r %}

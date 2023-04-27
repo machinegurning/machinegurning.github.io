@@ -531,7 +531,7 @@ I can even see the offending lines of code, which are in this case an untested `
  
 I don't think I need to worry about this too much.
  
-I've written about package development [before](http://www.machinegurning.com/rstats/R_classes/) - and there are a lot of other benefits to writing packages, not least the fact that for teams, it can allow us to enshrine business knowledge into a corpus of code that is inseparable from the documentation of that code.
+I've written about package development [before](http://www.machinegurning.blog/rstats/R_classes/) - and there are a lot of other benefits to writing packages, not least the fact that for teams, it can allow us to enshrine business knowledge into a corpus of code that is inseparable from the documentation of that code.
 It's well worth the relatively modest learning curve.
  
  

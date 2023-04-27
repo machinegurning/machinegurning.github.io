@@ -30,7 +30,7 @@ knitr::opts_chunk$set(
 
 There be dragons here! I've never drawn a map in R, let's change that by using R bloggers as a [guide](http://www.r-bloggers.com/visualizing-obesity-across-united-states-by-using-data-from-wikipedia/). This post introduces some basic web-scraping to get some relevant data that can then be visualised on a map of the United Kingdom. Obesity in the UK is a significant health concern and we map an aspect of it here.
 
-First we start by loading the relevant packages. See the session info at the end for full details. Perhaps you can guess the packages, given that we are Hadley fans on this [blog](http://www.machinegurning.com/rstats/hadley-effect/)?
+First we start by loading the relevant packages. See the session info at the end for full details. Perhaps you can guess the packages, given that we are Hadley fans on this [blog](http://www.machinegurning.blog/rstats/hadley-effect/)?
 
 ```{r echo = FALSE}
 
@@ -100,7 +100,7 @@ length(gadm$NAME_2)
 
 So we can draw a map but we want to identify these counties in the UK that have the Local Authorities with the highest percentage of its population with a BMI greater than or equal to 25.
 
-Now we need to find the `OBJECTID` or row of the Counties that harbour these LA with high obesity rates. I refer back to an earlier post and remind myself how to use [lookup table like strategies](http://www.machinegurning.com/rstats/lookup_tables/). The `gadm` object looks to be of S4 class thus we can extract slots or fields using the special `@` operator.
+Now we need to find the `OBJECTID` or row of the Counties that harbour these LA with high obesity rates. I refer back to an earlier post and remind myself how to use [lookup table like strategies](http://www.machinegurning.blog/rstats/lookup_tables/). The `gadm` object looks to be of S4 class thus we can extract slots or fields using the special `@` operator.
 
 ```{r}
 

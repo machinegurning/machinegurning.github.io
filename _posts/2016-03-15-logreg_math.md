@@ -21,7 +21,7 @@ categories: Rstats
  
 ## Introduction
  
-Classification problems occur often, perhaps even more so than regression problems. Consider the [Cortez student maths attainment data](https://archive.ics.uci.edu/ml/datasets/Student+Performance) discussed in previous [posts](http://www.machinegurning.com/rstats/student-performance/). The response variable, final grade of the year (range 0-20), `G3` can be classified into a binary pass or fail variable called `final`, based on a threshold mark. We used a decision tree approach to model this data before which provided 95% accuracy and had the benefit of interpretability. We will now model this using logistic regression so we can attach probabilities to our student pass or fail predictions. 
+Classification problems occur often, perhaps even more so than regression problems. Consider the [Cortez student maths attainment data](https://archive.ics.uci.edu/ml/datasets/Student+Performance) discussed in previous [posts](http://www.machinegurning.blog/rstats/student-performance/). The response variable, final grade of the year (range 0-20), `G3` can be classified into a binary pass or fail variable called `final`, based on a threshold mark. We used a decision tree approach to model this data before which provided 95% accuracy and had the benefit of interpretability. We will now model this using logistic regression so we can attach probabilities to our student pass or fail predictions. 
  
 
 {% highlight r %}

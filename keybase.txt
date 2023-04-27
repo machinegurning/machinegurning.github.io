@@ -4,7 +4,7 @@ https://keybase.io/mattupson
 
 I hereby claim:
 
-  * I am an admin of http://machinegurning.com
+  * I am an admin of http://machinegurning.blog
   * I am mattupson (https://keybase.io/mattupson) on keybase.
   * I have a public key ASCaaJ_dwu6Lb-DvQqk-EtxJv4TfHgD1ETYiE0XhpydneQo
 
@@ -26,7 +26,7 @@ To do so, I am signing this object:
       "seqno": 1589826
     },
     "service": {
-      "hostname": "machinegurning.com",
+      "hostname": "machinegurning.blog",
       "protocol": "http:"
     },
     "type": "web_service_binding",

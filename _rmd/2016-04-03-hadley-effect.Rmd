@@ -63,7 +63,7 @@ blog_view_data <- read_csv(
   "data/2016-04-01-blog-data.csv",
   col_types = list(
     col_factor(
-      levels = c("ivyleavedtoadflax.github.io","machinegurning.com")
+      levels = c("ivyleavedtoadflax.github.io","machinegurning.blog")
     ),
     col_datetime(),
     col_integer(),
@@ -101,7 +101,7 @@ Well, taking the true **Hadley Effect** to be a single day event ocurring 2nd Ap
 bind_rows(
   blog_view_data %>%
     dplyr::filter(
-      site == "machinegurning.com",
+      site == "machinegurning.blog",
       key == "users",
       date > "2016-02-28",
       date < "2016-04-02"
@@ -115,7 +115,7 @@ bind_rows(
     ),
   blog_view_data %>%
     dplyr::filter(
-      site == "machinegurning.com",
+      site == "machinegurning.blog",
       key == "users",
       date > "2016-04-02"
     ) %>%
@@ -144,7 +144,7 @@ bind_rows(
 
 blog_view_data %>%
   dplyr::filter(
-    site == "machinegurning.com",
+    site == "machinegurning.blog",
     key == "users",
     date > "2016-02-28"
   ) %>%

@@ -22,7 +22,7 @@ categories: Rstats
 
  
 ## The Player of Games
-What's the best way to teach oneself machine learning? Is it to do an [online course](https://www.coursera.org/specializations/jhu-data-science), write a [blog](http://www.machinegurning.com/posts/) or compete in [online programming competitions](https://www.kaggle.com/)? 
+What's the best way to teach oneself machine learning? Is it to do an [online course](https://www.coursera.org/specializations/jhu-data-science), write a [blog](http://www.machinegurning.blog/posts/) or compete in [online programming competitions](https://www.kaggle.com/)? 
  
 This blog post describes my first interaction with / or game of [Kaggle](https://www.kaggle.com/).
  

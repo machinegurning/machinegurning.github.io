@@ -29,7 +29,7 @@ However, the `FFTrees` package provides a user with everything they need in a fe
  
 
  
-We read, tidy and normalise the data as described [in a previous post](http://www.machinegurning.com/rstats/student-performance/).
+We read, tidy and normalise the data as described [in a previous post](http://www.machinegurning.blog/rstats/student-performance/).
  
 
 We then split the data into a training and testing set to assess how well the classifier performs on data it hasn't seen.

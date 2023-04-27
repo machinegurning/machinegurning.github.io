@@ -96,7 +96,7 @@ m <- C5.0(x = data_train[-13], y = data_train$final)
 
 ```
 
-In an earlier [post](http://www.machinegurning.com/rstats/student-performance/) we describe all the steps for building this decision tree classifier in detail, we will not repeat that here but instead carry on and attempt to evaluate the classifier's performance. The model looked like this:
+In an earlier [post](http://www.machinegurning.blog/rstats/student-performance/) we describe all the steps for building this decision tree classifier in detail, we will not repeat that here but instead carry on and attempt to evaluate the classifier's performance. The model looked like this:
 
 ```{r 2016-03-24_tree_m}
 m

@@ -19,7 +19,7 @@ output: html_document
  
 
  
-I've been [developing](http://www.machinegurning.com/rstats/uk_obesity/) my mapping skills in R for a couple of months now. I started off using a couple of different packages but was quickly drawn to `leaflet` which allows one to create interactive web maps with the [JavaScript Leaflet Library](http://leafletjs.com/). It has loads of great features out of the box and will meet most of your mapping needs (if old fashioned people reject your interactive map you can also provide a [static version](http://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-rstudio-map-as-png-or-jpg-file) using the `mapshot` function in the `mapview` package available on CRAN). 
+I've been [developing](http://www.machinegurning.blog/rstats/uk_obesity/) my mapping skills in R for a couple of months now. I started off using a couple of different packages but was quickly drawn to `leaflet` which allows one to create interactive web maps with the [JavaScript Leaflet Library](http://leafletjs.com/). It has loads of great features out of the box and will meet most of your mapping needs (if old fashioned people reject your interactive map you can also provide a [static version](http://stackoverflow.com/questions/31336898/how-to-save-leaflet-in-rstudio-map-as-png-or-jpg-file) using the `mapshot` function in the `mapview` package available on CRAN). 
  
 This blog post aims to persuade you as to the merits of `leaflet` especially when combined with [shiny](https://shiny.rstudio.com/) facilitating the development of some powerful apps for your users to explore data with. To demonstrate I simulate some data and pose a question: how do `X1` and `X2` vary between schools within Local Education Authorities (LA) in England?  
  
@@ -79,7 +79,7 @@ The `tags` environment also contains convenience functions. Here I insert the [M
 {% highlight r %}
 tags$a(img(src = "mg_logo.png", height = 144, width = 144),
  
-       href = "http://www.machinegurning.com/posts/"),
+       href = "http://www.machinegurning.blog/posts/"),
  
 tags$blockquote("Correlation does not imply causation.", cite = "Anon.")
 {% endhighlight %}

@@ -37,7 +37,7 @@ The first few chapters are free and are definitely worth checking out.  
 For this blog post we assume the reader is familiar with neural networks and how they work.  
 
 Install the package and load it, then install all the dependencies required.
-We suggest you visit the links above and go through the [MNIST](https://www.manning.com/books/deep-learning-with-r) example which we reproduce here (we looked at this dataset before in our [t-SNE post](http://www.machinegurning.com/rstats/tsne/)).
+We suggest you visit the links above and go through the [MNIST](https://www.manning.com/books/deep-learning-with-r) example which we reproduce here (we looked at this dataset before in our [t-SNE post](http://www.machinegurning.blog/rstats/tsne/)).
 I'm attempting to do this from memory as a way to practise my learning from the book (you can try using just the [cheatsheet](https://github.com/rstudio/cheatsheets/raw/master/keras.pdf)).
 Teaching others (through blogs or presentations) is a great way to consolidate your  learning of new techniques which will be a theme of your auto-didactic-life-long-learningness critical to your success as a data scientist.  
 
@@ -207,7 +207,7 @@ extracat::visna(diabetes, type = "b")
 
 ```
 
-Race, weight and a few other variables are responsible for most of the missing data, as shown above (see [here](http://www.machinegurning.com/rstats/kaggle_ames_house_prices/) for help interpreting this figure).
+Race, weight and a few other variables are responsible for most of the missing data, as shown above (see [here](http://www.machinegurning.blog/rstats/kaggle_ames_house_prices/) for help interpreting this figure).
 We drop them from our dataset.    
 
 For simplicity, we drop `encounter_id` and `patient_nbr` and assume that every row represents a unique admission to the hospital (not true of course, we could use a recurrent neural network to learn from historical experience of the patient but we simplify things for now).

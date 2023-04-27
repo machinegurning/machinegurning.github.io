@@ -55,7 +55,7 @@ mydata <- read.table(mydata, sep = ";",
 
 ```
 
-We read, tidy and normalise the data as described [in a previous post](http://www.machinegurning.com/rstats/student-performance/).
+We read, tidy and normalise the data as described [in a previous post](http://www.machinegurning.blog/rstats/student-performance/).
 
 ```{r, echo = FALSE}
 

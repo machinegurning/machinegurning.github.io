@@ -19,7 +19,7 @@ categories: Rstats
  
 
  
-I'm a sucker for statistical methods and Machine Learning particularly anything with a cool sounding name. When reading about [Crouching Tiger Hidden Markov Models](http://www.machinegurning.com/rstats/markov_chain_discrete/) in an earlier post I stumbled across a topic called [regime detection](http://www.r-bloggers.com/regime-detection/).  
+I'm a sucker for statistical methods and Machine Learning particularly anything with a cool sounding name. When reading about [Crouching Tiger Hidden Markov Models](http://www.machinegurning.blog/rstats/markov_chain_discrete/) in an earlier post I stumbled across a topic called [regime detection](http://www.r-bloggers.com/regime-detection/).  
  
 In economics latent Markov models, are so called Regime switching models. Regime Detection comes in handy when you are trying to decide which strategy to deploy. For example there are periods (regimes) when Trend Following strategies, like an autoregressive integrated moving average model (ARIMA) or exponential smoothing state space models (ETS) [forecasting](https://www.otexts.org/fpp) work better and there are periods when other strategies might be better. This might be useful if you are forecasting an index or rate that typically follows a trend but occasionally becomes more volatile.  
  
