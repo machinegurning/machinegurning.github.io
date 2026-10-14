@@ -211,6 +211,6 @@ mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; }
 }
 
 @media print {
-  .masthead nav, .more, .colophon, #disqus_thread { display: none; }
+  .masthead nav, .more, .colophon { display: none; }
   .prose pre, .prose table { width: auto; margin-left: 0; transform: none; }
 }
