@@ -1,5 +1,6 @@
 ---
-layout: post-index
-title: All Posts
-excerpt: "A List of Posts"
+layout: page
+title: All posts
+excerpt: "Every post, newest first."
 ---
+{% include _post-list.html %}

@@ -1,6 +1,6 @@
 ---
 layout: page
-title: About MachineGurning.com
+title: About Machine Gurning
 tags: [about]
 modified: '2016-03-21'
 comments: false

@@ -1,9 +1,12 @@
 ---
-layout: home
-excerpt: "A blog about Data Science, statistics, IoT, and Machine Learning."
-tags: [Jekyll, theme, responsive, blog, template]
-#image:
-#  feature: sample-image-1.jpg
-#  credit: WeGraphics
-#  creditlink: http://wegraphics.net/downloads/free-ultimate-blurred-background-pack/
+layout: default
+excerpt: "A blog about data science, statistics, IoT and machine learning."
 ---
+<section class="hero">
+  <img src="/images/machinegurning.png" alt="Hand-drawn robot, gurning" width="405" height="405">
+  <div>
+    <h1>Machine Gurning</h1>
+    <p>Two public-sector data scientists working through statistics, machine learning and the odd Raspberry Pi, in R and Python.</p>
+  </div>
+</section>
+{% include _post-list.html %}
