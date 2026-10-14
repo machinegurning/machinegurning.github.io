@@ -55,7 +55,7 @@ defaults:
   - scope: { path: "", type: posts }
     values:
       author_profile: true
-      read_time:      true
+      read_time:      false
       show_date:      true
       share:          false
       related:        true
