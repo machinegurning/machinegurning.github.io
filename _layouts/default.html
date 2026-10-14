@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+{% include _head.html %}
+</head>
+<body class="layout-{{ page.layout }}">
+<a class="skip" href="#main">Skip to content</a>
+<header class="masthead">
+  <a class="brand" href="/">
+    <img src="/images/machinegurning.png" alt="" width="56" height="56">
+    <span>{{ site.title }}</span>
+  </a>
+  <nav aria-label="Site">
+    {% for link in site.data.navigation %}<a href="{{ link.url }}"{% if page.url contains link.url %} aria-current="page"{% endif %}>{{ link.title }}</a>{% endfor %}
+    <a href="/feed.xml">RSS</a>
+  </nav>
+</header>
+<main id="main">
+{{ content }}
+</main>
+<footer class="colophon">
+  <p>Written by Matt Gregory and Matt Upson. Text licensed <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>. Built with <a href="https://jekyllrb.com">Jekyll</a>.</p>
+</footer>
+{% if content contains '$' or content contains '\(' or content contains '\[' %}
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']], processEscapes: true } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+{% endif %}
+</body>
+</html>

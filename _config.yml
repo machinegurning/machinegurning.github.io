@@ -1,67 +1,74 @@
-# Site
-title:             Machine Gurning
-masthead_title:    machinegurning.blog
-description:       "A blog about data science, statistics, IoT and machine learning."
-locale:            en-GB
-url:               https://machinegurning.blog
-logo:              /images/machinegurning.png
-repository:        machinegurning/machinegurning.github.io
+# Site wide configuration
 
-# Theme
-remote_theme:          mmistakes/minimal-mistakes@4.28.1
-minimal_mistakes_skin: default
-search:                true
+title:            machinegurning.blog
+locale:           en_GB
+url:              https://www.machinegurning.blog
 
-# Default author (posts override with `author: <key>` from _data/authors.yml)
-author:
-  name:   Machine Gurning
-  avatar: /images/machinegurning.png
-  bio:    "Two public-sector data scientists working through statistics, machine learning and the odd Raspberry Pi, in R and Python."
-  links:
-    - label: GitHub
-      icon:  fab fa-fw fa-github
-      url:   https://github.com/machinegurning
 
-footer:
-  links:
-    - label: GitHub
-      icon:  fab fa-fw fa-github
-      url:   https://github.com/machinegurning
+# Jekyll configuration
 
-# Build
-permalink:     /:categories/:title/
-markdown:      kramdown
-highlighter:   rouge
-paginate:      10
-paginate_path: /page:num/
-timezone:      Europe/London
+permalink:   /:categories/:title/
+markdown:    kramdown
+highlighter: rouge
 sass:
   style: compressed
+plugins:
+  - jekyll-sitemap
+  - jekyll-gist
+
 kramdown:
   auto_ids: true
   footnote_nr: 1
   entity_output: as_char
   toc_levels: 1..6
+  enable_coderay: false
 
-plugins:
-  - jekyll-remote-theme
-  - jekyll-paginate
-  - jekyll-sitemap
-  - jekyll-gist
-  - jekyll-feed
-  - jekyll-include-cache
 
-defaults:
-  - scope: { path: "", type: posts }
-    values:
-      author_profile: true
-      read_time:      false
-      show_date:      true
-      share:          false
-      related:        true
-  - scope: { path: "" }
-    values:
-      author_profile: true
+# Octopress
+
+# Default extensions
+post_ext: md
+page_ext: md
+
+# Found in _templates/
+post_layout: post
+page_layout: page
+
+# Format titles with titlecase?
+titlecase: true
+
+
+# Site owner
+owner:
+  name: Machine Gurning
+  avatar: machinegurning.png
+  bio: "A blog about Data Science, statistics, IoT, and Machine Learning"
+  email:
+  twitter: #username
+  facebook: #username
+  google:
+    plus: #username
+    analytics: 'UA-61502512-2'
+    verify: 'TuoV0BCNplJIrnNBgXLTvU9DbW7GU4BfgwbrBW-wbLs'
+    ad-client:
+    ad-slot:
+  bing-verify:
+  github: machinegurning
+  stackoverflow: #123456/username   from a "http://stackoverflow.com/users/123456/username" link
+  linkedin: #username
+  xing: #username
+  instagram: #username
+  lastfm: #username
+  tumblr: #username
+  pinterest: #username
+  foursquare: #username
+  steam: #username
+  dribbble: #username
+  youtube: #username
+  soundcloud: #username
+  weibo: #username
+  flickr: #username
+  codepen: #username
 
 include: [".htaccess"]
-exclude: ["Gemfile", "Gemfile.lock", "LICENSE", "README.md", "CONTRIBUTING.md", "vendor", "_rmd", "_templates", ".claude"]
+exclude: ["lib", "config.rb", "Capfile", "config", "log", "Rakefile", "Rakefile.rb", "tmp", "less", "*.sublime-project", "*.sublime-workspace", "test", "spec", "Gruntfile.js", "package.json", "node_modules", "Gemfile", "Gemfile.lock", "LICENSE", "README.md", "vendor"]

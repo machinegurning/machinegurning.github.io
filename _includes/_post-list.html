@@ -1,0 +1,15 @@
+<div class="post-list">
+{% for post in site.posts %}
+  {% capture year %}{{ post.date | date: '%Y' }}{% endcapture %}
+  {% if year != written_year %}{% unless forloop.first %}</ol></section>{% endunless %}
+  <section class="year"><h2>{{ year }}</h2><ol>{% assign written_year = year %}{% endif %}
+    <li>
+      <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%-d %b" }}</time>
+      <div>
+        <a href="{{ post.url }}">{{ post.title }}</a>
+        {% if post.excerpt %}<p>{{ post.excerpt | strip_html | truncate: 140 }}</p>{% endif %}
+      </div>
+    </li>
+  {% if forloop.last %}</ol></section>{% endif %}
+{% endfor %}
+</div>

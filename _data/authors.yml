@@ -1,17 +1,25 @@
+# Authors
+
 matt_gregory:
-  name:   Matt Gregory
-  avatar: /images/mg_bio.jpg
-  bio:    "Data scientist"
-  links:
-    - { label: Twitter, icon: fab fa-fw fa-twitter-square, url: "https://twitter.com/mammykins_" }
-    - { label: GitHub,  icon: fab fa-fw fa-github,         url: "https://github.com/mammykins" }
+  name: Matt Gregory
+  avatar: mg_bio.jpg
+  bio: "Data Scientist"
+  avatar: mg_bio.jpg
+  twitter: mammykins_
+  github: mammykins
+#  linkedin: BillyRick
+#  web: http://thewhip.com
+#  email: billy@rick.com
+#  bio: "What do you want, jewels? I am a very extravagant man."
+#  google:
+#    plus: BillyRick
+
 
 matt_upson:
-  name:   Matt Upson
-  avatar: /images/mu_bio.jpg
-  bio:    "Yo no soy marinero"
-  links:
-    - { label: Twitter,        icon: fab fa-fw fa-twitter-square, url: "https://twitter.com/m_a_upson" }
-    - { label: GitHub,         icon: fab fa-fw fa-github,         url: "https://github.com/ivyleavedtoadflax" }
-    - { label: Stack Overflow, icon: fab fa-fw fa-stack-overflow, url: "https://stackoverflow.com/users/3369034/ivyleavedtoadflax" }
-    - { label: LinkedIn,       icon: fab fa-fw fa-linkedin,       url: "https://www.linkedin.com/in/maupson" }
+  name: Matt Upson
+  avatar: mu_bio.jpg
+  bio: "Yo no soy marinero"
+  twitter: m_a_upson
+  github: ivyleavedtoadflax
+  stackoverflow: 3369034/ivyleavedtoadflax
+  linkedin: maupson

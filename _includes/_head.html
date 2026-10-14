@@ -1,0 +1,15 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page.title %}{{ page.title }} – {% endif %}{{ site.title }}</title>
+{% if page.excerpt %}<meta name="description" content="{{ page.excerpt | strip_html | strip }}">{% endif %}
+{% if page.author %}{% assign author = site.data.authors[page.author] %}{% else %}{% assign author = site.owner %}{% endif %}
+{% include _open-graph.html %}
+{% if site.owner.google.verify %}<meta name="google-site-verification" content="{{ site.owner.google.verify }}">{% endif %}
+<link rel="canonical" href="{{ site.url }}{{ page.url | remove: 'index.html' }}">
+<link rel="alternate" type="application/atom+xml" href="/feed.xml" title="{{ site.title }}">
+<link rel="icon" href="/favicon.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon-144x144-precomposed.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="/assets/css/main.css">
