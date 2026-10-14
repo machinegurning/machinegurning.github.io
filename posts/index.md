@@ -1,6 +1,5 @@
 ---
-layout: page
+layout: posts
 title: All posts
-excerpt: "Every post, newest first."
+permalink: /posts/
 ---
-{% include _post-list.html %}
